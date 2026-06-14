@@ -217,6 +217,14 @@ canvas{position:fixed;inset:0;display:block;image-rendering:pixelated;cursor:cro
 }
 .hk-btn .hk-label{font-size:7px;}
 
+/* ═══ KEY HIGHLIGHT ═══ */
+.hk-key.pressed{
+  background:rgba(245,166,35,0.35)!important;
+  border-color:var(--gold)!important;
+  color:var(--gold)!important;
+  box-shadow:0 0 6px rgba(245,166,35,0.4);
+}
+
 /* ═══ NOTIFICATION ═══ */
 #notif{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -285,6 +293,17 @@ canvas{position:fixed;inset:0;display:block;image-rendering:pixelated;cursor:cro
 
 <!-- HOTKEYS BAR (bottom-center) -->
 <div id="hud-hotkeys">
+  <div class="hk-btn" style="pointer-events:none;min-width:80px;">
+    <div style="display:grid;grid-template-columns:repeat(3,18px);grid-template-rows:repeat(2,18px);gap:2px;align-items:center;justify-items:center;">
+      <span></span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">W</span>
+      <span></span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">A</span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">S</span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">D</span>
+    </div>
+    <span class="hk-label">ДВИЖЕНИЕ</span>
+  </div>
   <div class="hk-btn" onclick="toggleInventory()">
     <span class="hk-key">I</span><span class="hk-label">🎒 ИНВЕНТ.</span>
   </div>
@@ -293,6 +312,17 @@ canvas{position:fixed;inset:0;display:block;image-rendering:pixelated;cursor:cro
   </div>
   <div class="hk-btn" onclick="toggleChat()">
     <span class="hk-key">T</span><span class="hk-label">💬 ЧАТ</span>
+  </div>
+  <div class="hk-btn" style="pointer-events:none;min-width:80px;">
+    <div style="display:grid;grid-template-columns:repeat(3,18px);grid-template-rows:repeat(2,18px);gap:2px;align-items:center;justify-items:center;">
+      <span></span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">↑</span>
+      <span></span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">←</span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">↓</span>
+      <span class="hk-key" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;">→</span>
+    </div>
+    <span class="hk-label">СТРЕЛКИ</span>
   </div>
 </div>
 
@@ -819,13 +849,118 @@ canvas.addEventListener('click',e=>{
 });
 
 /* ═══════════════════════════════════
-   KEYBOARD
+   KEYBOARD MOVEMENT
 ═══════════════════════════════════ */
+const keys=new Set();
+let moveRepeat=null, moveDelay=null;
+const MOVE_FIRST_DELAY=160; // мс до начала авто-повтора
+const MOVE_REPEAT_MS=110;   // мс между шагами при удержании
+
+// Изометрические направления для WASD/стрелок
+// В изо-проекции W/↑ = (-1,-1), S/↓ = (+1,+1), A/← = (-1,+1), D/→ = (+1,-1)
+const KEY_DIR={
+  'ArrowUp':   [-1,-1],'w':[-1,-1],'W':[-1,-1],
+  'ArrowDown': [+1,+1],'s':[+1,+1],'S':[+1,+1],
+  'ArrowLeft': [-1,+1],'a':[-1,+1],'A':[-1,+1],
+  'ArrowRight':[+1,-1],'d':[+1,-1],'D':[+1,-1],
+};
+
+function doMoveStep(){
+  // Берём первое активное направление из нажатых клавиш
+  for(const k of keys){
+    const dir=KEY_DIR[k];
+    if(!dir)continue;
+    // Запрещаем движение если открыт инвентарь/модал/чат в фокусе
+    if(document.getElementById('modal').classList.contains('open'))return;
+    if(document.getElementById('hud-inv').classList.contains('open'))return;
+    if(document.activeElement===document.getElementById('chat-inp'))return;
+
+    const nx=player.tx+dir[0], ny=player.ty+dir[1];
+    if(nx<0||ny<0||nx>=MAP_W||ny>=MAP_H)return;
+    if(!WALKABLE.has(map[ny][nx])){
+      // Попробовать скользить по одной оси
+      const ax=player.tx+dir[0], ay=player.ty;
+      const bx=player.tx,        by=player.ty+dir[1];
+      if(WALKABLE.has(map[ay]?.[ax])){
+        stepPlayer(ax,ay);
+      } else if(WALKABLE.has(map[by]?.[bx])){
+        stepPlayer(bx,by);
+      }
+      return;
+    }
+    stepPlayer(nx,ny);
+    return;
+  }
+}
+
+function stepPlayer(nx,ny){
+  // Если уже идём к этой клетке — пропускаем
+  if(player.moving&&player.path.length===1&&player.path[0].tx===nx&&player.path[0].ty===ny)return;
+  // Один шаг — прямое перемещение без BFS (быстрее отклик)
+  const p=iso(nx,ny);
+  player.path=[{tx:nx,ty:ny}];
+  player.moving=true;
+  gainXp(1,0);
+}
+
+function startMoveRepeat(){
+  doMoveStep();
+  moveDelay=setTimeout(()=>{
+    doMoveStep();
+    moveRepeat=setInterval(doMoveStep, MOVE_REPEAT_MS);
+  }, MOVE_FIRST_DELAY);
+}
+function stopMoveRepeat(){
+  clearTimeout(moveDelay); clearInterval(moveRepeat);
+  moveDelay=null; moveRepeat=null;
+}
+
+// Подсветка клавиш в хоткей-баре
+const KEY_LABEL_MAP={
+  'w':'W','W':'W','ArrowUp':'↑',
+  's':'S','S':'S','ArrowDown':'↓',
+  'a':'A','A':'A','ArrowLeft':'←',
+  'd':'D','D':'D','ArrowRight':'→',
+};
+function highlightKey(key,on){
+  const label=KEY_LABEL_MAP[key];
+  if(!label)return;
+  document.querySelectorAll('.hk-key').forEach(el=>{
+    if(el.textContent.trim()===label)el.classList.toggle('pressed',on);
+  });
+}
+
 document.addEventListener('keydown',e=>{
-  if(e.key==='i'||e.key==='I'){e.preventDefault();toggleInventory();}
-  if(e.key==='e'||e.key==='E'){e.preventDefault();tryInteract();}
-  if(e.key==='t'||e.key==='T'){e.preventDefault();toggleChat();}
-  if(e.key==='Escape'){closeModal();if(document.getElementById('hud-inv').classList.contains('open'))toggleInventory();}
+  // UI hotkeys
+  if(e.key==='i'||e.key==='I'){e.preventDefault();toggleInventory();return;}
+  if(e.key==='e'||e.key==='E'){e.preventDefault();tryInteract();return;}
+  if(e.key==='t'||e.key==='T'){
+    if(document.activeElement!==document.getElementById('chat-inp')){e.preventDefault();toggleChat();}
+    return;
+  }
+  if(e.key==='Escape'){
+    closeModal();
+    if(document.getElementById('hud-inv').classList.contains('open'))toggleInventory();
+    return;
+  }
+
+  // Movement keys
+  if(KEY_DIR[e.key]){
+    e.preventDefault();
+    highlightKey(e.key,true);
+    if(keys.has(e.key))return; // уже зажата
+    keys.add(e.key);
+    if(keys.size===1) startMoveRepeat(); // первая нажатая — запускаем
+  }
+});
+
+document.addEventListener('keyup',e=>{
+  if(KEY_DIR[e.key]){
+    highlightKey(e.key,false);
+    keys.delete(e.key);
+    if(keys.size===0) stopMoveRepeat();
+    else { stopMoveRepeat(); startMoveRepeat(); } // переключились на другую клавишу
+  }
 });
 
 /* ═══════════════════════════════════
