@@ -465,20 +465,58 @@ const ITEMS={
 };
 
 /* ═══════════════════════════════════
-   PLAYER
+   PLAYER — загружаем из localStorage
 ═══════════════════════════════════ */
+function loadActiveChar(){
+  try{
+    const id=localStorage.getItem('gorodok_active_char');
+    const chars=JSON.parse(localStorage.getItem('gorodok_chars')||'[]');
+    if(id) return chars.find(c=>c.id===id)||null;
+  }catch{}
+  return null;
+}
+function saveActiveChar(){
+  try{
+    const id=localStorage.getItem('gorodok_active_char');
+    const chars=JSON.parse(localStorage.getItem('gorodok_chars')||'[]');
+    const idx=chars.findIndex(c=>c.id===id);
+    if(idx===-1)return;
+    chars[idx]={...chars[idx],
+      name:player.name,hp:player.hp,maxHp:player.maxHp,
+      xp:player.xp,level:player.level,gold:player.gold,
+      speed:player.speed,inventory:player.inventory,
+      playtime:(chars[idx].playtime||0)+Math.round((Date.now()-sessionStart)/60000),
+    };
+    localStorage.setItem('gorodok_chars',JSON.stringify(chars));
+  }catch{}
+}
+const sessionStart=Date.now();
+
+const _saved=loadActiveChar();
 const player={
-  name:'Странник',tx:25,ty:25,
-  px:0,py:0,
+  name: _saved?.name||'Странник',
+  tx:25,ty:25,px:0,py:0,
   path:[],moving:false,
-  hp:100,maxHp:100,xp:0,maxXp:100,level:1,
-  gold:250,speed:SPEED,
-  inventory:new Array(20).fill(null), // 20 slots
-  color:'#f5a623',shadow:'rgba(245,130,0,0.45)',
+  hp:  _saved?.hp   ??100,
+  maxHp:_saved?.maxHp??100,
+  xp:  _saved?.xp   ??0,
+  maxXp:100,
+  level:_saved?.level??1,
+  gold: _saved?.gold ??250,
+  speed:_saved?.speed??SPEED,
+  color:_saved?.color??'#f5a623',
+  shadow:_saved?.color?_saved.color+'88':'rgba(245,130,0,0.45)',
+  inventory:_saved?.inventory??new Array(20).fill(null),
+  charId:_saved?.id??null,
 };
 (()=>{const p=iso(player.tx,player.ty);player.px=p.x;player.py=p.y;})();
-// Give starting item
-player.inventory[0]=ITEMS.medkit;
+// Если нет сохранённого персонажа — стартовая аптечка
+if(!_saved) player.inventory[0]=ITEMS.medkit;
+
+// Автосохранение каждые 30 сек
+setInterval(saveActiveChar,30000);
+// Сохраняем при уходе со страницы
+window.addEventListener('beforeunload',saveActiveChar);
 
 let camX=0,camY=0;
 
@@ -1198,11 +1236,29 @@ function addSys(text){
 /* ═══════════════════════════════════
    INIT
 ═══════════════════════════════════ */
-addSys('Добро пожаловать в Городок!');
-addLog('Нажми I — инвентарь, E — действие');
+// Обновляем имя в HUD
+document.getElementById('stat-name').textContent=player.name;
+document.getElementById('stat-level').textContent=player.level;
+
+// Кнопка «Сменить персонажа» в stats HUD
+(()=>{
+  const hdr=document.querySelector('#hud-stats .hud-title');
+  const btn=document.createElement('button');
+  btn.textContent='← ВЫЙТИ';
+  btn.style.cssText='float:right;background:none;border:none;font-family:"Press Start 2P",monospace;font-size:5px;color:rgba(245,166,35,0.45);cursor:pointer;padding:0;letter-spacing:1px;';
+  btn.onmouseover=()=>btn.style.color='var(--gold)';
+  btn.onmouseout=()=>btn.style.color='rgba(245,166,35,0.45)';
+  btn.onclick=()=>{saveActiveChar();window.location.href='gorodok-chars.html';};
+  hdr.appendChild(btn);
+})();
+
+const cls=_saved?.classId;
+const clsName={warrior:'Воин',rogue:'Разбойник',medic:'Медик',engineer:'Инженер'}[cls]||'';
+addSys(`${player.name}${clsName?' ('+clsName+')':''} вошёл в Городок!`);
+addLog('I — инвентарь, E — действие, WASD — движение');
 addChatMsg('Алёша','Привет, новенький!');
-addChatMsg('Маша','Добро пожаловать 👋');
-addChatMsg('Система','Иди к больнице и нажми E','sys');
+addChatMsg('Маша',`Привет, ${player.name}! 👋`);
+addChatMsg('Система','Подойди к больнице и нажми E','sys');
 updateBars();
 
 requestAnimationFrame(render);
