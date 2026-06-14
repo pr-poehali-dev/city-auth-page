@@ -494,20 +494,30 @@ const sessionStart=Date.now();
 
 const _saved=loadActiveChar();
 const player={
-  name: _saved?.name||'Странник',
+  name:  _saved?.name   ||'Странник',
   tx:25,ty:25,px:0,py:0,
   path:[],moving:false,
-  hp:  _saved?.hp   ??100,
-  maxHp:_saved?.maxHp??100,
-  xp:  _saved?.xp   ??0,
+  hp:    _saved?.hp     ??100,
+  maxHp: _saved?.maxHp  ??100,
+  xp:    _saved?.xp     ??0,
   maxXp:100,
-  level:_saved?.level??1,
-  gold: _saved?.gold ??250,
-  speed:_saved?.speed??SPEED,
-  color:_saved?.color??'#f5a623',
-  shadow:_saved?.color?_saved.color+'88':'rgba(245,130,0,0.45)',
-  inventory:_saved?.inventory??new Array(20).fill(null),
-  charId:_saved?.id??null,
+  level: _saved?.level  ??1,
+  gold:  _saved?.gold   ??250,
+  speed: _saved?.speed  ??SPEED,
+  // внешность — для отрисовки персонажа
+  color:     _saved?.clothCol??_saved?.color??'#1e2a40',
+  shadow:    (_saved?.clothCol??_saved?.color??'#1e2a40')+'88',
+  skinCol:   _saved?.skinCol  ??'#f0c88a',
+  hairCol:   _saved?.hairCol  ??'#3a2208',
+  gender:    _saved?.gender   ??'male',
+  face:      _saved?.face     ??'f1',
+  hair:      _saved?.hair     ??'short',
+  cloth:     _saved?.cloth    ??'casual',
+  clothCol:  _saved?.clothCol ??'#1e2a40',
+  faction:   _saved?.faction  ??'city',
+  classId:   _saved?.classId  ??'medic',
+  inventory: _saved?.inventory??new Array(20).fill(null),
+  charId:    _saved?.id??null,
 };
 (()=>{const p=iso(player.tx,player.ty);player.px=p.x;player.py=p.y;})();
 // Если нет сохранённого персонажа — стартовая аптечка
@@ -724,45 +734,105 @@ function drawTile(tx,ty,sx,sy){
 
 /* ═══════════════════════════════════
    DRAW CHARACTER
+   cfg: {color,shadow,skinCol,hairCol,gender,hair,cloth,clothCol,faction,classId}
 ═══════════════════════════════════ */
-function drawChar(worldX,worldY,color,shadow,name,isPlayer,moving){
+function dkn(hex,amt){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  if(isNaN(r))return hex;
+  return '#'+[Math.max(0,Math.floor(r*(1-amt))),Math.max(0,Math.floor(g*(1-amt))),Math.max(0,Math.floor(b*(1-amt)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function drawChar(worldX,worldY,cfg,name,isPlayer,moving){
   const sx=CW/2+(worldX-camX);
   const sy=CH/2+(worldY-camY)-8;
   const t=Date.now();
   const leg=moving?Math.sin(t*.008)*4:0;
 
-  // shadow
-  ctx.globalAlpha=.35;ctx.fillStyle=shadow;
+  const skin=cfg.skinCol||'#e8c090';
+  const hair=cfg.hairCol||'#3a2008';
+  const bc  =cfg.clothCol||cfg.color||'#1e2a40';
+  const fac =cfg.faction||'city';
+  const cls =cfg.classId||'medic';
+  const gend=cfg.gender||'male';
+  const hairType=cfg.hair||'short';
+
+  // ── Shadow
+  ctx.globalAlpha=.32;ctx.fillStyle=cfg.shadow||bc+'88';
   ctx.beginPath();ctx.ellipse(sx,sy+29,11,4,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  // legs
-  const jc=color==='#f5a623'?'#2a3a5a':'#1a1a2a';
-  ctx.fillStyle=jc;ctx.fillRect(sx-5,sy+14+leg,4,8);ctx.fillRect(sx+1,sy+14-leg,4,8);
-  ctx.fillStyle='#0a0a14';ctx.fillRect(sx-5,sy+20+leg,4,3);ctx.fillRect(sx+1,sy+20-leg,4,3);
+  // ── Legs (pants = darker cloth)
+  const pc=dkn(bc,.35);
+  ctx.fillStyle=pc;ctx.fillRect(sx-5,sy+14+leg,4,8);ctx.fillRect(sx+1,sy+14-leg,4,8);
+  // shoes
+  const shoe=gend==='female'?'#c03060':'#1a1212';
+  ctx.fillStyle=shoe;ctx.fillRect(sx-5,sy+21+leg,5,2);ctx.fillRect(sx+1,sy+21-leg,5,2);
 
-  // body
-  ctx.fillStyle=color;ctx.fillRect(sx-5,sy+6,10,10);
-  ctx.fillStyle='rgba(0,0,0,0.18)';ctx.fillRect(sx-5,sy+12,10,4);
-  // arms
-  ctx.fillStyle=color;ctx.fillRect(sx-8,sy+8-leg*.5,3,7);ctx.fillRect(sx+5,sy+8+leg*.5,3,7);
+  // ── Body
+  ctx.fillStyle=bc;ctx.fillRect(sx-5,sy+6,10,10);
+  ctx.fillStyle='rgba(0,0,0,0.16)';ctx.fillRect(sx-5,sy+12,10,4);
+  // collar
+  if(cfg.cloth==='suit'){ctx.fillStyle='#f0e8d0';ctx.fillRect(sx-1,sy+6,3,3);}
+  if(cfg.cloth==='robe'||cls==='medic'){
+    ctx.fillStyle='rgba(255,255,255,0.75)';
+    ctx.fillRect(sx-1,sy+6,3,5);ctx.fillRect(sx-2,sy+8,5,2);
+  }
+  // Arms
+  ctx.fillStyle=bc;ctx.fillRect(sx-8,sy+8-leg*.5,3,6);ctx.fillRect(sx+5,sy+8+leg*.5,3,6);
+  // hands
+  ctx.fillStyle=skin;ctx.fillRect(sx-8,sy+13-leg*.5,3,2);ctx.fillRect(sx+5,sy+13+leg*.5,3,2);
 
-  // head
-  ctx.fillStyle='#e8c090';ctx.fillRect(sx-4,sy,8,8);
-  ctx.fillStyle='#1a0a00';ctx.fillRect(sx-2,sy+2,2,2);ctx.fillRect(sx+2,sy+2,2,2);
-  ctx.fillStyle=isPlayer?'#3a2008':'#0a0a20';ctx.fillRect(sx-4,sy,8,3);
+  // ── Class accessory
+  if(cls==='tank'){
+    ctx.fillStyle='#4a1c1c';ctx.fillRect(sx+5,sy+6,3,7);
+    ctx.fillStyle='#883030';ctx.fillRect(sx+6,sy+7,2,2);
+  }
+  if(cls==='shooter'){
+    ctx.fillStyle='#1a1a1a';ctx.fillRect(sx-9,sy+11,4,2);ctx.fillRect(sx-9,sy+10,2,3);
+  }
 
-  // player marker
+  // ── Faction badge strip on arm
+  const facCol=fac==='mafia'?'#c03030':'#2a8a4a';
+  ctx.fillStyle=facCol;ctx.fillRect(sx-8,sy+9,3,2);
+
+  // ── Head
+  ctx.fillStyle=skin;ctx.fillRect(sx-4,sy,8,8);
+  // face shadow
+  ctx.fillStyle='rgba(0,0,0,0.08)';ctx.fillRect(sx-4,sy+6,8,2);
+  // eyes
+  ctx.fillStyle='#1a0a00';ctx.fillRect(sx-2,sy+2,2,2);ctx.fillRect(sx+1,sy+2,2,2);
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fillRect(sx-2,sy+2,1,1);ctx.fillRect(sx+1,sy+2,1,1);
+  // mouth
+  ctx.fillStyle=gend==='female'?'#c05060':'rgba(0,0,0,0.2)';
+  ctx.fillRect(sx-2,sy+6,5,1);
+  // female lashes
+  if(gend==='female'){ctx.fillStyle='#1a0a00';ctx.fillRect(sx-3,sy+1,3,1);ctx.fillRect(sx+1,sy+1,3,1);}
+
+  // ── Hair
+  ctx.fillStyle=hair;
+  if(hairType==='short'||hairType==='bob'){
+    ctx.fillRect(sx-4,sy,8,3);ctx.fillRect(sx-4,sy+1,2,5);ctx.fillRect(sx+3,sy+1,2,5);
+  } else if(hairType==='buzz'){
+    ctx.fillRect(sx-4,sy,8,2);
+  } else if(hairType==='long'||hairType==='braids'){
+    ctx.fillRect(sx-4,sy,8,3);ctx.fillRect(sx-5,sy+1,2,10);ctx.fillRect(sx+4,sy+1,2,10);
+  } else if(hairType==='mohawk'){
+    ctx.fillRect(sx-1,sy-5,3,7);
+  } else if(hairType==='ponytail'){
+    ctx.fillRect(sx-4,sy,8,3);ctx.fillRect(sx+3,sy+1,2,9);
+  }
+
+  // ── Player marker
   if(isPlayer){
     ctx.strokeStyle='rgba(245,166,35,0.7)';ctx.lineWidth=1.5;
     ctx.beginPath();ctx.arc(sx,sy-7,5,0,Math.PI*2);ctx.stroke();
     ctx.fillStyle='rgba(245,166,35,0.85)';ctx.beginPath();ctx.arc(sx,sy-7,2,0,Math.PI*2);ctx.fill();
   }
 
-  // name
+  // ── Name tag
   ctx.font='11px VT323,monospace';ctx.textAlign='center';
   const nw=ctx.measureText(name).width;
-  ctx.fillStyle='rgba(3,8,22,0.75)';ctx.fillRect(sx-nw/2-3,sy-22,nw+6,13);
+  ctx.fillStyle='rgba(3,8,22,0.78)';ctx.fillRect(sx-nw/2-3,sy-22,nw+6,13);
   ctx.fillStyle=isPlayer?'#f5a623':'rgba(200,220,255,0.85)';ctx.fillText(name,sx,sy-11);
   ctx.textAlign='left';
 }
@@ -1040,7 +1110,7 @@ function render(now){
     ...bots.map(b=>({...b,isPlayer:false,d:b.tx+b.ty})),
     {...player,isPlayer:true,d:player.tx+player.ty}
   ].sort((a,b)=>a.d-b.d);
-  allChars.forEach(ch=>drawChar(ch.px,ch.py,ch.color,ch.shadow,ch.name,ch.isPlayer,ch.moving));
+  allChars.forEach(ch=>drawChar(ch.px,ch.py,ch,ch.name,ch.isPlayer,ch.moving));
 
   // Minimap
   drawMinimap();

@@ -9,192 +9,195 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --gold:#f5a623;--gold-lt:#ffd166;--gold-dk:#c47c10;
-  --bg:#04060e;--panel:rgba(6,11,26,0.96);--border:rgba(245,166,35,0.35);
+  --bg:#04060e;--panel:rgba(6,11,26,0.97);--border:rgba(245,166,35,0.32);
   --input-bg:rgba(8,16,40,0.95);--p2:'Press Start 2P',monospace;
+  --mafia:#8b1c1c;--city:#1a4a2e;
 }
 html,body{width:100%;min-height:100vh;background:var(--bg);font-family:'VT323',monospace;color:#d4e8ff;overflow-x:hidden;}
-
-/* ── BG GRID ── */
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;
-  background-image:
-    linear-gradient(rgba(245,166,35,0.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(245,166,35,0.03) 1px,transparent 1px);
-  background-size:40px 40px;
-}
-body::after{
-  content:'';position:fixed;inset:0;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 0%,rgba(245,166,35,0.06) 0%,transparent 70%);
-}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(245,166,35,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(245,166,35,0.025) 1px,transparent 1px);
+  background-size:48px 48px;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% -10%,rgba(245,166,35,0.07) 0%,transparent 65%);}
 
 /* ── HEADER ── */
-header{
-  text-align:center;padding:40px 20px 24px;position:relative;z-index:1;
-}
-.logo{
-  font-family:var(--p2);font-size:22px;color:var(--gold);letter-spacing:6px;
-  text-shadow:0 0 30px rgba(245,166,35,0.5),0 0 60px rgba(245,166,35,0.2);
-  margin-bottom:10px;
-}
-.logo-sub{font-size:15px;color:rgba(245,166,35,0.5);letter-spacing:3px;}
+header{text-align:center;padding:32px 20px 20px;position:relative;z-index:1;}
+.logo{font-family:var(--p2);font-size:20px;color:var(--gold);letter-spacing:6px;
+  text-shadow:0 0 28px rgba(245,166,35,0.5);margin-bottom:8px;}
+.logo-sub{font-size:14px;color:rgba(245,166,35,0.45);letter-spacing:3px;}
 
-/* ── MAIN LAYOUT ── */
-.page{
-  max-width:1100px;margin:0 auto;padding:0 20px 60px;
-  display:grid;grid-template-columns:1fr 340px;gap:24px;
-  position:relative;z-index:1;
-}
+/* ── PAGE LAYOUT ── */
+.page{max-width:1200px;margin:0 auto;padding:0 20px 60px;position:relative;z-index:1;
+  display:grid;grid-template-columns:1fr 480px;gap:20px;align-items:start;}
 
 /* ── CHARS GRID ── */
-.section-title{
-  font-family:var(--p2);font-size:8px;color:var(--gold);letter-spacing:2px;
-  margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);
-}
-.chars-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
-  margin-bottom:16px;
-}
-.char-card{
-  background:var(--panel);border:1.5px solid var(--border);
-  padding:16px 12px;cursor:pointer;position:relative;
-  transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:10px;
-  min-height:200px;
-}
-.char-card:hover:not(.empty){
-  border-color:var(--gold);
-  box-shadow:0 0 20px rgba(245,166,35,0.15);
-  transform:translateY(-2px);
-}
-.char-card.selected{
-  border-color:var(--gold);
-  box-shadow:0 0 0 1px var(--gold),0 0 24px rgba(245,166,35,0.2);
-}
-.char-card.empty{
-  border-style:dashed;border-color:rgba(245,166,35,0.15);
-  cursor:pointer;justify-content:center;
-}
-.char-card.empty:hover{border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.03);}
-.add-icon{font-size:28px;opacity:.3;margin-bottom:6px;}
-.add-label{font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.3);letter-spacing:1px;}
+.sec-title{font-family:var(--p2);font-size:7px;color:var(--gold);letter-spacing:2px;
+  margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.chars-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
 
-/* avatar canvas per card */
-.char-avatar{
-  width:60px;height:80px;position:relative;
-  image-rendering:pixelated;
-}
-.char-avatar canvas{display:block;}
-
-.char-name{font-family:var(--p2);font-size:8px;color:var(--gold);text-align:center;letter-spacing:1px;}
-.char-meta{font-size:13px;color:rgba(180,200,240,0.6);text-align:center;line-height:1.5;}
-.char-class-badge{
-  font-family:var(--p2);font-size:5.5px;letter-spacing:1px;
-  padding:3px 7px;border:1px solid;margin-top:2px;
-}
-.char-bars{width:100%;display:flex;flex-direction:column;gap:4px;}
-.cbar{height:5px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.06);}
+.char-card{background:var(--panel);border:1.5px solid var(--border);padding:14px 10px;
+  cursor:pointer;position:relative;transition:all .17s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;min-height:190px;}
+.char-card:hover:not(.empty){border-color:var(--gold);box-shadow:0 0 18px rgba(245,166,35,0.12);transform:translateY(-2px);}
+.char-card.selected{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 22px rgba(245,166,35,0.18);}
+.char-card.empty{border-style:dashed;border-color:rgba(245,166,35,0.13);justify-content:center;}
+.char-card.empty:hover{border-color:rgba(245,166,35,0.35);background:rgba(245,166,35,0.02);}
+.sel-bar{position:absolute;top:-1px;left:-1px;right:-1px;height:2px;background:var(--gold);}
+.slot-num{position:absolute;top:6px;left:8px;font-family:var(--p2);font-size:5px;color:rgba(245,166,35,0.25);}
+.card-del{position:absolute;top:5px;right:6px;background:none;border:none;
+  color:rgba(255,80,80,0.3);cursor:pointer;font-size:13px;padding:2px 4px;transition:color .12s;}
+.card-del:hover{color:rgba(255,80,80,0.8);}
+.add-icon{font-size:26px;opacity:.25;margin-bottom:4px;}
+.add-lbl{font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.25);letter-spacing:1px;}
+.card-name{font-family:var(--p2);font-size:7px;color:var(--gold);text-align:center;}
+.card-meta{font-size:13px;color:rgba(180,200,240,0.55);text-align:center;line-height:1.5;}
+.card-badge{font-family:var(--p2);font-size:5px;letter-spacing:1px;padding:2px 6px;border:1px solid;margin-top:2px;display:inline-block;}
+.card-bars{width:100%;display:flex;flex-direction:column;gap:3px;}
+.cbar{height:4px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);}
 .cbar-fill{height:100%;}
-.char-slot-num{
-  position:absolute;top:7px;left:9px;
-  font-family:var(--p2);font-size:5px;color:rgba(245,166,35,0.3);
-}
-.char-del{
-  position:absolute;top:6px;right:7px;
-  background:none;border:none;color:rgba(255,80,80,0.35);cursor:pointer;
-  font-size:14px;padding:2px 4px;transition:color .12s;line-height:1;
-}
-.char-del:hover{color:rgba(255,80,80,0.85);}
-.selected-mark{
-  position:absolute;top:-1px;left:-1px;right:-1px;
-  background:var(--gold);height:2px;
-}
+.faction-stripe{position:absolute;bottom:0;left:0;right:0;height:3px;}
 
-/* ── ENTER BUTTON ── */
-.enter-btn{
-  width:100%;padding:14px;
+.enter-btn{width:100%;padding:14px;
   background:linear-gradient(180deg,var(--gold-lt),var(--gold));
   border:2px solid var(--gold-dk);color:#120800;
-  font-family:var(--p2);font-size:9px;letter-spacing:3px;cursor:pointer;
-  transition:all .15s;
-  box-shadow:0 4px 20px rgba(245,166,35,0.3);
-}
-.enter-btn:hover{box-shadow:0 6px 28px rgba(245,166,35,0.5);transform:translateY(-1px);}
+  font-family:var(--p2);font-size:8px;letter-spacing:3px;cursor:pointer;
+  transition:all .14s;box-shadow:0 4px 18px rgba(245,166,35,0.28);}
+.enter-btn:hover{box-shadow:0 6px 26px rgba(245,166,35,0.48);transform:translateY(-1px);}
 .enter-btn:active{transform:translateY(1px);}
-.enter-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
+.enter-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none;}
 
-/* ── RIGHT PANEL: CREATE / DETAIL ── */
-.side-panel{display:flex;flex-direction:column;gap:16px;}
-.panel-box{background:var(--panel);border:1.5px solid var(--border);padding:18px;}
+/* ── RIGHT: WIZARD + DETAIL ── */
+.side{display:flex;flex-direction:column;gap:14px;}
+.panel{background:var(--panel);border:1.5px solid var(--border);padding:16px;}
 
-/* CLASS SELECTOR */
-.class-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
-.class-btn{
-  background:rgba(0,0,0,0.4);border:1.5px solid rgba(245,166,35,0.2);
-  padding:10px 8px;cursor:pointer;transition:all .15s;text-align:center;
-}
-.class-btn:hover{border-color:rgba(245,166,35,0.5);}
-.class-btn.active{border-color:var(--gold);background:rgba(245,166,35,0.08);}
-.class-btn .ci{font-size:20px;display:block;margin-bottom:4px;}
-.class-btn .cn{font-family:var(--p2);font-size:6px;color:var(--gold);display:block;}
-.class-btn .cd{font-size:12px;color:rgba(180,200,240,0.5);display:block;margin-top:2px;}
+/* WIZARD STEPS */
+.wiz-steps{display:flex;gap:0;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.wiz-step{flex:1;text-align:center;padding:8px 4px;font-family:var(--p2);font-size:5.5px;
+  color:rgba(245,166,35,0.3);cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .15s;letter-spacing:.5px;}
+.wiz-step.active{color:var(--gold);border-bottom-color:var(--gold);}
+.wiz-step.done{color:rgba(105,240,174,0.6);}
+.wiz-step.done::before{content:'✓ ';}
 
-/* COLOR PICKER */
-.color-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-.color-dot{
-  width:26px;height:26px;border:2px solid transparent;cursor:pointer;
-  transition:all .15s;position:relative;
-}
-.color-dot:hover{transform:scale(1.15);}
-.color-dot.active{border-color:#fff;box-shadow:0 0 8px currentColor;}
+.wiz-page{display:none;}
+.wiz-page.active{display:block;}
 
-/* STAT SLIDERS */
-.stat-sliders{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
-.stat-slide-row{display:flex;flex-direction:column;gap:4px;}
-.stat-slide-lbl{display:flex;justify-content:space-between;align-items:center;}
-.stat-slide-lbl span:first-child{font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.6);}
-.stat-slide-lbl span:last-child{font-size:13px;color:var(--gold);}
-.stat-track{height:6px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.07);position:relative;cursor:pointer;}
-.stat-fill{height:100%;transition:width .2s;}
-.pts-left{font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.5);text-align:right;margin-top:4px;}
+/* OPTION ROWS */
+.opt-label{font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.5);letter-spacing:1px;margin-bottom:8px;margin-top:14px;}
+.opt-label:first-child{margin-top:0;}
 
-/* NAME INPUT */
-.name-input{
-  width:100%;background:var(--input-bg);border:1.5px solid rgba(42,111,219,0.3);
+/* GENDER */
+.gender-row{display:flex;gap:10px;}
+.gender-btn{flex:1;background:rgba(0,0,0,0.35);border:1.5px solid rgba(245,166,35,0.18);
+  padding:12px 8px;cursor:pointer;transition:all .14s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.gender-btn:hover{border-color:rgba(245,166,35,0.45);}
+.gender-btn.active{border-color:var(--gold);background:rgba(245,166,35,0.06);}
+.gender-btn .gi{font-size:22px;}
+.gender-btn .gl{font-family:var(--p2);font-size:6.5px;color:var(--gold);}
+
+/* SELECTOR STRIP (face, hair, cloth) */
+.strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.strip-item{background:rgba(0,0,0,0.35);border:1.5px solid rgba(245,166,35,0.15);
+  cursor:pointer;transition:all .14s;position:relative;overflow:hidden;}
+.strip-item:hover{border-color:rgba(245,166,35,0.45);}
+.strip-item.active{border-color:var(--gold);box-shadow:0 0 8px rgba(245,166,35,0.25);}
+.strip-item canvas{display:block;image-rendering:pixelated;}
+.strip-item .si-lbl{font-family:var(--p2);font-size:5px;color:rgba(245,166,35,0.5);
+  text-align:center;padding:3px 4px;white-space:nowrap;}
+
+/* COLOR PALETTE */
+.palette{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.pal-dot{width:24px;height:24px;border:2px solid transparent;cursor:pointer;transition:all .14s;}
+.pal-dot:hover{transform:scale(1.18);}
+.pal-dot.active{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.4);}
+
+/* FACTION */
+.faction-row{display:flex;gap:10px;margin-top:4px;}
+.faction-btn{flex:1;border:1.5px solid;padding:14px 8px;cursor:pointer;
+  transition:all .14s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:rgba(0,0,0,0.4);}
+.faction-btn.mafia{border-color:rgba(139,28,28,0.4);}
+.faction-btn.city {border-color:rgba(26,74,46,0.4);}
+.faction-btn.mafia.active{border-color:#c03030;background:rgba(139,28,28,0.14);box-shadow:0 0 14px rgba(192,48,48,0.2);}
+.faction-btn.city.active {border-color:#2a8a4a;background:rgba(26,74,46,0.14);box-shadow:0 0 14px rgba(42,138,74,0.2);}
+.faction-btn:hover{opacity:.85;}
+.fb-icon{font-size:24px;}
+.fb-name{font-family:var(--p2);font-size:7px;}
+.fb-desc{font-size:13px;color:rgba(200,220,255,0.5);line-height:1.4;margin-top:2px;}
+.faction-btn.mafia .fb-name{color:#c03030;}
+.faction-btn.city  .fb-name{color:#2a8a4a;}
+
+/* CLASS */
+.class-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;}
+.class-btn{background:rgba(0,0,0,0.35);border:1.5px solid rgba(245,166,35,0.18);
+  padding:10px 6px;cursor:pointer;transition:all .14s;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:5px;}
+.class-btn:hover{border-color:rgba(245,166,35,0.45);}
+.class-btn.active{border-color:var(--gold);background:rgba(245,166,35,0.07);}
+.class-btn .cbi{font-size:20px;}
+.class-btn .cbn{font-family:var(--p2);font-size:6px;color:var(--gold);}
+.class-btn .cbd{font-size:12px;color:rgba(180,200,240,0.5);}
+.class-bonus{margin-top:8px;padding:8px;background:rgba(245,166,35,0.05);border:1px solid rgba(245,166,35,0.2);
+  font-size:13px;color:rgba(245,166,35,0.7);min-height:32px;}
+
+/* STATS */
+.stat-sliders{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.stat-row{display:flex;flex-direction:column;gap:3px;}
+.stat-row-lbl{display:flex;justify-content:space-between;}
+.stat-row-lbl span:first-child{font-family:var(--p2);font-size:5.5px;color:rgba(245,166,35,0.55);}
+.stat-row-lbl span:last-child{font-size:13px;}
+.stat-track{height:7px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.07);cursor:pointer;}
+.stat-fill{height:100%;transition:width .18s;}
+.pts-info{font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.45);text-align:right;margin-top:6px;}
+
+/* NAME */
+.name-inp{width:100%;background:var(--input-bg);border:1.5px solid rgba(42,111,219,0.28);
   padding:10px 12px;font-family:'VT323',monospace;font-size:22px;color:#d4e8ff;
-  outline:none;caret-color:var(--gold);margin-top:10px;letter-spacing:1px;
-}
-.name-input:focus{border-color:#2a6fdb;}
-.name-err{font-family:var(--p2);font-size:6px;color:#ff5252;margin-top:6px;min-height:14px;}
+  outline:none;caret-color:var(--gold);margin-top:4px;letter-spacing:1px;}
+.name-inp:focus{border-color:#2a6fdb;}
+.name-err{font-family:var(--p2);font-size:5.5px;color:#ff5252;margin-top:5px;min-height:12px;}
 
-.create-btn{
-  width:100%;margin-top:12px;padding:12px;
-  background:linear-gradient(180deg,rgba(42,111,219,0.3),rgba(20,60,160,0.3));
-  border:1.5px solid rgba(42,111,219,0.5);color:#a0c8ff;
-  font-family:var(--p2);font-size:7px;letter-spacing:2px;cursor:pointer;transition:all .15s;
-}
-.create-btn:hover{border-color:#2a6fdb;color:#d4e8ff;box-shadow:0 0 14px rgba(42,111,219,0.3);}
+/* PREVIEW */
+.preview-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:14px;background:rgba(0,0,0,0.3);border:1px solid rgba(245,166,35,0.12);margin-top:14px;}
+.preview-name{font-family:var(--p2);font-size:7px;color:var(--gold);}
+.preview-tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;}
+.preview-tag{font-family:var(--p2);font-size:5px;padding:2px 6px;border:1px solid;letter-spacing:.5px;}
 
-/* ── DETAIL PANEL ── */
-.detail-avatar{display:flex;justify-content:center;margin-bottom:12px;}
-.detail-stats{display:flex;flex-direction:column;gap:6px;}
-.dstat{display:flex;justify-content:space-between;font-size:15px;}
-.dstat span:first-child{color:rgba(180,200,240,0.5);}
-.dstat span:last-child{color:var(--gold);}
-.dbar-row{display:flex;flex-direction:column;gap:3px;margin-top:2px;}
-.dbar-lbl{font-family:var(--p2);font-size:5px;color:rgba(245,166,35,0.45);}
-.dbar{height:7px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.07);}
-.dbar-fill{height:100%;}
+/* NAV BUTTONS */
+.nav-row{display:flex;gap:8px;margin-top:14px;}
+.nav-btn{flex:1;padding:10px;font-family:var(--p2);font-size:6px;letter-spacing:1px;
+  cursor:pointer;transition:all .13s;border:1.5px solid;}
+.nav-btn.back{background:rgba(0,0,0,0.3);border-color:rgba(245,166,35,0.2);color:rgba(245,166,35,0.5);}
+.nav-btn.back:hover{border-color:var(--gold);color:var(--gold);}
+.nav-btn.next{background:linear-gradient(180deg,rgba(42,111,219,0.25),rgba(20,60,160,0.25));
+  border-color:rgba(42,111,219,0.45);color:#a0c8ff;}
+.nav-btn.next:hover{border-color:#2a6fdb;color:#d4e8ff;box-shadow:0 0 12px rgba(42,111,219,0.25);}
+.nav-btn.finish{background:linear-gradient(180deg,var(--gold-lt),var(--gold));
+  border-color:var(--gold-dk);color:#120800;}
+.nav-btn.finish:hover{box-shadow:0 0 16px rgba(245,166,35,0.4);}
 
-/* PREVIEW CANVAS */
-#preview-canvas{display:block;margin:0 auto;image-rendering:pixelated;}
+/* DETAIL */
+.detail-grid{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;}
+.detail-stats{display:flex;flex-direction:column;gap:5px;}
+.ds{display:flex;justify-content:space-between;font-size:14px;}
+.ds span:first-child{color:rgba(180,200,240,0.5);}
+.ds span:last-child{color:var(--gold);}
+.dbar-r{display:flex;flex-direction:column;gap:2px;margin-top:3px;}
+.dbar-l{font-family:var(--p2);font-size:5px;color:rgba(245,166,35,0.4);}
+.dbar{height:5px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.06);}
+.dbar-f{height:100%;}
+.del-btn{width:100%;margin-top:10px;padding:9px;background:rgba(0,0,0,0.3);
+  border:1.5px solid rgba(255,80,80,0.3);color:#ff8080;
+  font-family:var(--p2);font-size:6px;letter-spacing:1px;cursor:pointer;transition:all .13s;}
+.del-btn:hover{border-color:#ff5050;box-shadow:0 0 10px rgba(255,80,80,0.2);}
 
-/* ── TOAST ── */
-#toast{
-  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
-  background:rgba(5,10,24,0.95);border:1.5px solid var(--gold);
+/* TOAST */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  background:rgba(4,8,20,0.96);border:1.5px solid var(--gold);
   padding:10px 22px;font-family:var(--p2);font-size:7px;color:var(--gold);
   letter-spacing:2px;display:none;z-index:200;white-space:nowrap;
-  box-shadow:0 0 20px rgba(245,166,35,0.3);
-}
+  box-shadow:0 0 18px rgba(245,166,35,0.3);}
 </style>
 </head>
 <body>
@@ -206,55 +209,112 @@ header{
 
 <div class="page">
 
-  <!-- LEFT: CHAR SLOTS -->
+  <!-- LEFT: SLOTS -->
   <div>
-    <div class="section-title">▸ СЛОТЫ ПЕРСОНАЖЕЙ (макс. 6)</div>
+    <div class="sec-title">▸ МОИ ПЕРСОНАЖИ (макс. 6)</div>
     <div class="chars-grid" id="chars-grid"></div>
     <button class="enter-btn" id="enter-btn" disabled onclick="enterGame()">▶ ВОЙТИ В ИГРУ</button>
   </div>
 
-  <!-- RIGHT: SIDE PANELS -->
-  <div class="side-panel">
+  <!-- RIGHT -->
+  <div class="side">
 
-    <!-- CREATE FORM -->
-    <div class="panel-box" id="create-panel">
-      <div class="section-title">✦ СОЗДАТЬ ПЕРСОНАЖА</div>
+    <!-- WIZARD -->
+    <div class="panel" id="create-panel">
+      <div class="sec-title" id="wiz-title">✦ СОЗДАТЬ ПЕРСОНАЖА</div>
+      <div class="wiz-steps" id="wiz-steps"></div>
 
-      <!-- Name -->
-      <div style="font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.55);letter-spacing:1px;">ИМЯ ПЕРСОНАЖА</div>
-      <input class="name-input" id="char-name-inp" placeholder="Введите имя..." maxlength="14"
-        oninput="onNameInput()" onkeydown="if(event.key==='Enter')createChar()">
-      <div class="name-err" id="name-err"></div>
-
-      <!-- Class -->
-      <div style="font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.55);letter-spacing:1px;margin-top:14px;">КЛАСС</div>
-      <div class="class-grid" id="class-grid"></div>
-
-      <!-- Color -->
-      <div style="font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.55);letter-spacing:1px;margin-top:14px;">ЦВЕТ ПЕРСОНАЖА</div>
-      <div class="color-row" id="color-row"></div>
-
-      <!-- Stats -->
-      <div style="font-family:var(--p2);font-size:6px;color:rgba(245,166,35,0.55);letter-spacing:1px;margin-top:14px;">РАСПРЕДЕЛЕНИЕ ОЧКОВ <span style="color:var(--gold)" id="pts-left-top"></span></div>
-      <div class="stat-sliders" id="stat-sliders"></div>
-      <div class="pts-left" id="pts-display"></div>
-
-      <!-- Preview -->
-      <div style="margin-top:14px;text-align:center;">
-        <canvas id="preview-canvas" width="80" height="100"></canvas>
+      <!-- STEP 1: Пол + Имя -->
+      <div class="wiz-page" id="step-0">
+        <div class="opt-label">ПОЛ</div>
+        <div class="gender-row">
+          <div class="gender-btn" id="g-male"   onclick="setProp('gender','male');renderStep()">
+            <span class="gi">♂</span><span class="gl">МУЖСКОЙ</span>
+          </div>
+          <div class="gender-btn" id="g-female" onclick="setProp('gender','female');renderStep()">
+            <span class="gi">♀</span><span class="gl">ЖЕНСКИЙ</span>
+          </div>
+        </div>
+        <div class="opt-label" style="margin-top:14px;">ИМЯ ПЕРСОНАЖА</div>
+        <input class="name-inp" id="char-name-inp" placeholder="Введите имя..." maxlength="14"
+          oninput="form.name=this.value.trim();document.getElementById('name-err').textContent=''"
+          onkeydown="if(event.key==='Enter')wizNext()">
+        <div class="name-err" id="name-err"></div>
       </div>
 
-      <button class="create-btn" id="create-btn" onclick="createChar()">+ СОЗДАТЬ</button>
+      <!-- STEP 2: Внешность -->
+      <div class="wiz-page" id="step-1">
+        <div class="opt-label">ТИП ЛИЦА</div>
+        <div class="strip" id="strip-face"></div>
+        <div class="opt-label">ПРИЧЕСКА</div>
+        <div class="strip" id="strip-hair"></div>
+        <div class="opt-label">ЦВЕТ ВОЛОС</div>
+        <div class="palette" id="pal-hair"></div>
+        <div class="opt-label">ЦВЕТ КОЖИ</div>
+        <div class="palette" id="pal-skin"></div>
+      </div>
+
+      <!-- STEP 3: Одежда -->
+      <div class="wiz-page" id="step-2">
+        <div class="opt-label">ОДЕЖДА</div>
+        <div class="strip" id="strip-cloth"></div>
+        <div class="opt-label">ЦВЕТ ОДЕЖДЫ</div>
+        <div class="palette" id="pal-cloth"></div>
+      </div>
+
+      <!-- STEP 4: Фракция -->
+      <div class="wiz-page" id="step-3">
+        <div class="opt-label">ФРАКЦИЯ</div>
+        <div class="faction-row">
+          <div class="faction-btn city"  id="f-city"  onclick="setProp('faction','city');renderStep()">
+            <span class="fb-icon">🏙️</span>
+            <span class="fb-name">ГОРОЖАНЕ</span>
+            <span class="fb-desc">Защищают город. Получают поддержку властей и бонусы в больнице.</span>
+          </div>
+          <div class="faction-btn mafia" id="f-mafia" onclick="setProp('faction','mafia');renderStep()">
+            <span class="fb-icon">🔫</span>
+            <span class="fb-name">МАФИЯ</span>
+            <span class="fb-desc">Теневое управление. Скидки в чёрном рынке, доступ к тайным зонам.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5: Класс -->
+      <div class="wiz-page" id="step-4">
+        <div class="opt-label">КЛАСС</div>
+        <div class="class-grid" id="class-grid"></div>
+        <div class="class-bonus" id="class-bonus"></div>
+      </div>
+
+      <!-- STEP 6: Статы -->
+      <div class="wiz-page" id="step-5">
+        <div class="opt-label">РАСПРЕДЕЛИТЬ ОЧКИ <span id="pts-top" style="color:var(--gold)"></span></div>
+        <div class="stat-sliders" id="stat-sliders"></div>
+        <div class="pts-info" id="pts-info"></div>
+      </div>
+
+      <!-- PREVIEW (все шаги) -->
+      <div class="preview-wrap" id="preview-wrap">
+        <canvas id="preview-canvas" width="100" height="120" style="image-rendering:pixelated;display:block;"></canvas>
+        <div class="preview-name" id="preview-name">???</div>
+        <div class="preview-tags" id="preview-tags"></div>
+      </div>
+
+      <!-- NAV -->
+      <div class="nav-row">
+        <button class="nav-btn back" id="nav-back" onclick="wizBack()">← НАЗАД</button>
+        <button class="nav-btn next" id="nav-next" onclick="wizNext()">ДАЛЕЕ →</button>
+      </div>
     </div>
 
-    <!-- DETAIL PANEL (shown when char selected) -->
-    <div class="panel-box" id="detail-panel" style="display:none;">
-      <div class="section-title" id="detail-title">▸ ПЕРСОНАЖ</div>
-      <div class="detail-avatar">
-        <canvas id="detail-canvas" width="80" height="100" style="image-rendering:pixelated;display:block;"></canvas>
+    <!-- DETAIL -->
+    <div class="panel" id="detail-panel" style="display:none;">
+      <div class="sec-title" id="detail-title">▸ ПЕРСОНАЖ</div>
+      <div class="detail-grid">
+        <canvas id="detail-canvas" width="100" height="120" style="image-rendering:pixelated;display:block;"></canvas>
+        <div class="detail-stats" id="detail-stats"></div>
       </div>
-      <div class="detail-stats" id="detail-stats"></div>
-      <button class="create-btn" style="margin-top:12px;border-color:rgba(255,80,80,0.3);color:#ff8080;" onclick="deleteSelected()">🗑 УДАЛИТЬ ПЕРСОНАЖА</button>
+      <button class="del-btn" onclick="deleteSelected()">🗑 УДАЛИТЬ ПЕРСОНАЖА</button>
     </div>
 
   </div>
@@ -265,433 +325,603 @@ header{
 <script>
 'use strict';
 
-/* ══════════════════════════════════
-   CLASSES
-══════════════════════════════════ */
-const CLASSES=[
-  {id:'warrior', icon:'⚔️', name:'Воин',     desc:'Сила и защита', color:'#e83030',
-   base:{hp:130,speed:1.8,str:8,def:6,agi:3}, bonus:'⚔ Урон +30%'},
-  {id:'rogue',   icon:'🗡️', name:'Разбойник',desc:'Быстрый и ловкий',color:'#20c060',
-   base:{hp:90, speed:2.8,str:5,def:3,agi:10},bonus:'🥷 Скорость +40%'},
-  {id:'medic',   icon:'🩺', name:'Медик',    desc:'Лечение и поддержка',color:'#3a8fff',
-   base:{hp:100,speed:2.0,str:3,def:5,agi:5},bonus:'💊 Лечение x2'},
-  {id:'engineer',icon:'🔧', name:'Инженер',  desc:'Умный и богатый',color:'#c060e0',
-   base:{hp:100,speed:2.2,str:4,def:4,agi:6},bonus:'💰 Деньги +50%'},
+/* ════════════════════════════════════
+   DATA DEFINITIONS
+════════════════════════════════════ */
+const FACES=[
+  {id:'f1',label:'Мягкое'},
+  {id:'f2',label:'Острое'},
+  {id:'f3',label:'Широкое'},
+  {id:'f4',label:'Круглое'},
 ];
+const HAIRS_M=[
+  {id:'short', label:'Короткая'},
+  {id:'buzz',  label:'Бритая'},
+  {id:'long',  label:'Длинная'},
+  {id:'mohawk',label:'Ирокез'},
+];
+const HAIRS_F=[
+  {id:'bob',    label:'Каре'},
+  {id:'ponytail',label:'Хвост'},
+  {id:'long',   label:'Длинная'},
+  {id:'braids', label:'Косы'},
+];
+const CLOTHES=[
+  {id:'casual', label:'Повседн.',icon:'👕'},
+  {id:'suit',   label:'Костюм', icon:'👔'},
+  {id:'jacket', label:'Куртка', icon:'🧥'},
+  {id:'hoodie', label:'Худи',   icon:'🩱'},
+  {id:'uniform',label:'Форма',  icon:'🦺'},
+  {id:'robe',   label:'Халат',  icon:'🥼'},
+];
+const HAIR_COLS=['#1a0a00','#3a2208','#8b4513','#c8a060','#f0d080','#e0e0e0','#e83030','#3a8fff'];
+const SKIN_COLS=['#f0c88a','#d4a06a','#b87840','#8b5a28','#5c3010','#f8e0c0'];
+const CLOTH_COLS=['#1e2a40','#2a3a1a','#3a1a1a','#1a1a3a','#3a2a10','#2a2a2a','#4a3010','#204030'];
 
-const COLORS=['#f5a623','#3a8fff','#e83060','#20c060','#c060e0','#60d0e0','#ff8c42','#a0c8ff'];
+const CLASSES=[
+  {id:'medic',  icon:'🩺',name:'Медик (Хил)',    desc:'Лечение и поддержка',
+   color:'#3a8fff',base:{hp:100,speed:2.1,str:3,def:5,agi:5},bonus:'💊 Лечение ×2, аптечки дешевле'},
+  {id:'tank',   icon:'🛡️',name:'Штурмовик (Танк)',desc:'Сила и броня',
+   color:'#e83030',base:{hp:140,speed:1.7,str:9,def:8,agi:2},bonus:'⚔️ HP +40, урон +30%, замедление'},
+  {id:'shooter',icon:'🔫',name:'Стрелок (ДД)',   desc:'Скорость и дальность',
+   color:'#20c060',base:{hp:85, speed:2.8,str:6,def:2,agi:10},bonus:'🎯 Дальность +50%, скорость +40%'},
+];
+const FACTIONS=[
+  {id:'city', name:'Горожане',icon:'🏙️',color:'#2a8a4a',
+   bonus:'Больница со скидкой, помощь полиции, +20 репутации'},
+  {id:'mafia',name:'Мафия',  icon:'🔫',color:'#c03030',
+   bonus:'Чёрный рынок, тайные зоны, +50 стартовых денег'},
+];
+const STAT_DEFS=[
+  {key:'str',label:'Сила',    col:'#e83030'},
+  {key:'def',label:'Защита',  col:'#3a8fff'},
+  {key:'agi',label:'Ловкость',col:'#20c060'},
+];
+const STAT_PTS=15;
 
-/* ══════════════════════════════════
-   STATE
-══════════════════════════════════ */
-const MAX_CHARS=6;
-const STAT_POINTS=15; // очков на распределение
-let chars=[];         // массив созданных персонажей
-let selectedId=null;  // выбранный для входа
+/* ════════════════════════════════════
+   FORM STATE
+════════════════════════════════════ */
+const STEP_LABELS=['ИМЯ','ВНЕШНОСТЬ','ОДЕЖДА','ФРАКЦИЯ','КЛАСС','СТАТЫ'];
+let step=0;
 let form={
-  name:'',
-  classId:'warrior',
-  color:COLORS[0],
-  stats:{str:5,def:3,agi:3}, // распределяемые поверх базы
+  name:'',gender:'male',
+  face:'f1',hair:'short',hairCol:HAIR_COLS[1],skinCol:SKIN_COLS[0],
+  cloth:'casual',clothCol:CLOTH_COLS[0],
+  faction:'city',classId:'medic',
+  stats:{str:5,def:5,agi:5},
 };
 
-function loadChars(){
-  try{chars=JSON.parse(localStorage.getItem('gorodok_chars')||'[]');}
-  catch{chars=[];}
-}
+/* ════════════════════════════════════
+   CHARS STORAGE
+════════════════════════════════════ */
+const MAX_CHARS=6;
+let chars=[];
+let selectedId=null;
+function loadChars(){try{chars=JSON.parse(localStorage.getItem('gorodok_chars')||'[]');}catch{chars=[];}}
 function saveChars(){localStorage.setItem('gorodok_chars',JSON.stringify(chars));}
 
-/* ══════════════════════════════════
-   DRAW PIXEL CHARACTER (canvas)
-══════════════════════════════════ */
-function drawPixelChar(canvas,color,classId,scale=4){
+/* ════════════════════════════════════
+   PIXEL CHARACTER RENDERER
+════════════════════════════════════ */
+function drawChar(canvas,cfg,scale=4.2){
   const ctx=canvas.getContext('2d');
-  const w=canvas.width,h=canvas.height;
-  ctx.clearRect(0,0,w,h);
-
-  const cx=w/2,cy=h-10;
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const cx=Math.floor(W/2), cy=H-8;
   const s=scale;
 
-  // shadow
-  ctx.globalAlpha=.3;ctx.fillStyle='rgba(0,0,0,0.6)';
-  ctx.beginPath();ctx.ellipse(cx,cy,8*s*.5,2*s*.5,0,0,Math.PI*2);ctx.fill();
+  // ── Shadow
+  ctx.globalAlpha=.3;ctx.fillStyle='rgba(0,0,0,0.7)';
+  ctx.beginPath();ctx.ellipse(cx,cy-2,9*s*.45,2.5*s*.45,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  // legs
-  const lc=color==='#f5a623'?'#2a3a5a':'#1a1a2a';
-  ctx.fillStyle=lc;
-  ctx.fillRect(cx-s*1.2,cy-s*4,s*1.1,s*2.2);
-  ctx.fillRect(cx+s*.1,cy-s*4,s*1.1,s*2.2);
-  ctx.fillStyle='#0a0a14';
-  ctx.fillRect(cx-s*1.2,cy-s*2,s*1.1,s*.8);
-  ctx.fillRect(cx+s*.1,cy-s*2,s*1.1,s*.8);
+  // ── Legs
+  const lc=cfg.clothCol||'#1e2a40';
+  const legDark=darken(lc,.5);
+  ctx.fillStyle=lc;ctx.fillRect(cx-Math.floor(s*1.4),cy-Math.floor(s*4.5),Math.floor(s*1.2),Math.floor(s*2.5));
+  ctx.fillStyle=darken(lc,.3);ctx.fillRect(cx+Math.floor(s*.1),cy-Math.floor(s*4.5),Math.floor(s*1.2),Math.floor(s*2.5));
+  // shoes
+  const shoeCol=cfg.gender==='female'?'#c03060':'#1a1a1a';
+  ctx.fillStyle=shoeCol;
+  ctx.fillRect(cx-Math.floor(s*1.5),cy-Math.floor(s*2.2),Math.floor(s*1.5),Math.floor(s*.8));
+  ctx.fillRect(cx+Math.floor(s*.05),cy-Math.floor(s*2.2),Math.floor(s*1.5),Math.floor(s*.8));
 
-  // body
-  ctx.fillStyle=color;
-  ctx.fillRect(cx-s*1.3,cy-s*7,s*2.6,s*2.8);
-  ctx.fillStyle='rgba(0,0,0,0.2)';
-  ctx.fillRect(cx-s*1.3,cy-s*5.2,s*2.6,s*1);
+  // ── Body (cloth)
+  const bc=clothBody(cfg.cloth,cfg.clothCol,cfg.classId);
+  ctx.fillStyle=bc.main;ctx.fillRect(cx-Math.floor(s*1.4),cy-Math.floor(s*7.2),Math.floor(s*2.8),Math.floor(s*2.8));
+  // collar / detail
+  if(bc.detail){ctx.fillStyle=bc.detail;ctx.fillRect(cx-Math.floor(s*.4),cy-Math.floor(s*7.2),Math.floor(s*.8),Math.floor(s*.8));}
+  // shadow bottom
+  ctx.fillStyle='rgba(0,0,0,0.18)';ctx.fillRect(cx-Math.floor(s*1.4),cy-Math.floor(s*5.2),Math.floor(s*2.8),Math.floor(s*.7));
 
-  // arms
-  ctx.fillStyle=color;
-  ctx.fillRect(cx-s*2.1,cy-s*7,s*.9,s*2);
-  ctx.fillRect(cx+s*1.2,cy-s*7,s*.9,s*2);
+  // ── Arms
+  ctx.fillStyle=bc.main;
+  ctx.fillRect(cx-Math.floor(s*2.1),cy-Math.floor(s*7),Math.floor(s*.8),Math.floor(s*2));
+  ctx.fillRect(cx+Math.floor(s*1.3),cy-Math.floor(s*7),Math.floor(s*.8),Math.floor(s*2));
+  // hands
+  ctx.fillStyle=cfg.skinCol||'#f0c88a';
+  ctx.fillRect(cx-Math.floor(s*2.1),cy-Math.floor(s*5.4),Math.floor(s*.8),Math.floor(s*.9));
+  ctx.fillRect(cx+Math.floor(s*1.3),cy-Math.floor(s*5.4),Math.floor(s*.8),Math.floor(s*.9));
 
-  // head
-  ctx.fillStyle='#e8c090';
-  ctx.fillRect(cx-s*1.1,cy-s*9.5,s*2.2,s*2.2);
+  // ── Class accessory
+  drawClassAccy(ctx,cfg.classId,cfg.clothCol,cx,cy,s);
 
-  // eyes
-  ctx.fillStyle='#1a0a00';
-  ctx.fillRect(cx-s*.7,cy-s*9,s*.5,s*.5);
-  ctx.fillRect(cx+s*.2,cy-s*9,s*.5,s*.5);
+  // ── Head
+  const sk=cfg.skinCol||'#f0c88a';
+  const headW=Math.floor(s*2.2),headH=Math.floor(s*2.4);
+  const hx=cx-Math.floor(headW/2),hy=cy-Math.floor(s*9.6);
 
-  // hair / hat by class
-  const hairCols={warrior:'#4a1010',rogue:'#1a1a1a',medic:'#dde8ff',engineer:'#6030a0'};
-  ctx.fillStyle=hairCols[classId]||'#3a2008';
-  ctx.fillRect(cx-s*1.1,cy-s*9.5,s*2.2,s*.7);
+  // face type
+  drawFace(ctx,cfg.face,cfg.gender,hx,hy,headW,headH,sk,s);
 
-  // class accessory
-  if(classId==='warrior'){
+  // ── Hair
+  drawHair(ctx,cfg.hair,cfg.gender,cfg.hairCol,hx,hy,headW,headH,s);
+
+  // ── Faction badge (small)
+  const fc=cfg.faction==='mafia'?'#c03030':'#2a8a4a';
+  ctx.fillStyle=fc;ctx.fillRect(cx-Math.floor(s*.3),cy-Math.floor(s*9.7)-2,Math.floor(s*.6),Math.floor(s*.3));
+}
+
+function clothBody(cloth,col,cls){
+  const m=col||'#1e2a40';
+  const d=darken(m,.4);
+  if(cloth==='suit')   return{main:m,detail:'#f0e8d0'};
+  if(cloth==='jacket') return{main:m,detail:'rgba(255,255,255,0.2)'};
+  if(cloth==='hoodie') return{main:m,detail:null};
+  if(cloth==='uniform')return{main:m,detail:'#f0d060'};
+  if(cloth==='robe')   return{main:m,detail:'rgba(255,255,255,0.3)'};
+  return{main:m,detail:null};
+}
+
+function drawClassAccy(ctx,cls,clothCol,cx,cy,s){
+  if(cls==='tank'){
     // shield
-    ctx.fillStyle='#8a2020';ctx.fillRect(cx+s*1.2,cy-s*7.5,s*.7,s*1.8);
-    ctx.fillStyle='#c04040';ctx.fillRect(cx+s*1.35,cy-s*7.2,s*.4,s*.4);
+    ctx.fillStyle='#4a1c1c';ctx.fillRect(cx+Math.floor(s*1.3),cy-Math.floor(s*7.5),Math.floor(s*.7),Math.floor(s*2));
+    ctx.fillStyle='#883030';ctx.fillRect(cx+Math.floor(s*1.45),cy-Math.floor(s*7.2),Math.floor(s*.4),Math.floor(s*.4));
   }
-  if(classId==='medic'){
-    // cross on body
-    ctx.fillStyle='rgba(255,255,255,0.8)';
-    ctx.fillRect(cx-s*.2,cy-s*6.8,s*.5,s*1.4);
-    ctx.fillRect(cx-s*.6,cy-s*6.3,s*1.3,s*.5);
+  if(cls==='medic'){
+    // cross
+    ctx.fillStyle='rgba(255,255,255,0.85)';
+    ctx.fillRect(cx-Math.floor(s*.2),cy-Math.floor(s*7),Math.floor(s*.5),Math.floor(s*1.4));
+    ctx.fillRect(cx-Math.floor(s*.65),cy-Math.floor(s*6.5),Math.floor(s*1.4),Math.floor(s*.45));
   }
-  if(classId==='rogue'){
-    // hood shadow
-    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(cx-s*1.1,cy-s*9.5,s*2.2,s*1.4);
-  }
-  if(classId==='engineer'){
-    // goggles
-    ctx.fillStyle='rgba(100,50,200,0.5)';
-    ctx.fillRect(cx-s*.9,cy-s*8.8,s*.6,s*.4);ctx.fillRect(cx+s*.3,cy-s*8.8,s*.6,s*.4);
+  if(cls==='shooter'){
+    // gun
+    ctx.fillStyle='#1a1a1a';
+    ctx.fillRect(cx-Math.floor(s*2.3),cy-Math.floor(s*5.8),Math.floor(s*.6),Math.floor(s*.35));
+    ctx.fillRect(cx-Math.floor(s*2.3),cy-Math.floor(s*6),Math.floor(s*.35),Math.floor(s*.5));
   }
 }
 
-/* ══════════════════════════════════
-   RENDER CHARS GRID
-══════════════════════════════════ */
-function renderGrid(){
-  const grid=document.getElementById('chars-grid');
-  grid.innerHTML='';
+function drawFace(ctx,face,gender,hx,hy,hw,hh,sk,s){
+  // base head
+  let rx=0,ry=0;
+  if(face==='f1'){rx=0;ry=0;}       // мягкое — стандарт
+  if(face==='f2'){rx=Math.floor(s*.15);ry=-Math.floor(s*.1);}  // острое — чуть у́же
+  if(face==='f3'){rx=-Math.floor(s*.1);ry=0;} // широкое
+  if(face==='f4'){ry=Math.floor(s*.1);}       // круглое
+  const fw=hw+(face==='f3'?Math.floor(s*.4):0)-(face==='f2'?Math.floor(s*.3):0);
+  const fh=hh+(face==='f4'?Math.floor(s*.3):0);
+  ctx.fillStyle=sk;ctx.fillRect(hx+rx,hy+ry,fw,fh);
+  // skin shadow
+  ctx.fillStyle='rgba(0,0,0,0.1)';ctx.fillRect(hx+rx,hy+ry+fh-Math.floor(s*.3),fw,Math.floor(s*.3));
 
+  // eyes
+  const eyeY=hy+ry+Math.floor(fh*.38);
+  const eyeW=Math.floor(s*.45),eyeH=Math.floor(s*.42);
+  ctx.fillStyle='#1a0a00';
+  ctx.fillRect(hx+rx+Math.floor(fw*.22),eyeY,eyeW,eyeH);
+  ctx.fillRect(hx+rx+Math.floor(fw*.56),eyeY,eyeW,eyeH);
+  // pupils
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  ctx.fillRect(hx+rx+Math.floor(fw*.22)+1,eyeY+1,1,1);
+  ctx.fillRect(hx+rx+Math.floor(fw*.56)+1,eyeY+1,1,1);
+
+  // nose
+  ctx.fillStyle='rgba(0,0,0,0.12)';
+  ctx.fillRect(hx+rx+Math.floor(fw*.44),eyeY+Math.floor(s*.6),Math.floor(s*.25),Math.floor(s*.25));
+
+  // mouth
+  const mouthY=hy+ry+Math.floor(fh*.72);
+  ctx.fillStyle=gender==='female'?'#c05060':'rgba(0,0,0,0.2)';
+  ctx.fillRect(hx+rx+Math.floor(fw*.28),mouthY,Math.floor(fw*.44),Math.floor(s*.22));
+
+  // female lashes
+  if(gender==='female'){
+    ctx.fillStyle='#1a0a00';
+    ctx.fillRect(hx+rx+Math.floor(fw*.18),eyeY-Math.floor(s*.2),Math.floor(fw*.18),Math.floor(s*.18));
+    ctx.fillRect(hx+rx+Math.floor(fw*.52),eyeY-Math.floor(s*.2),Math.floor(fw*.18),Math.floor(s*.18));
+  }
+}
+
+function drawHair(ctx,hair,gender,col,hx,hy,hw,hh,s){
+  ctx.fillStyle=col||'#3a2208';
+  const hairs=gender==='female'?HAIRS_F:HAIRS_M;
+
+  if(hair==='short'||hair==='bob'){
+    ctx.fillRect(hx-Math.floor(s*.1),hy-Math.floor(s*.1),hw+Math.floor(s*.2),Math.floor(hh*.38));
+    // sideburns
+    ctx.fillRect(hx-Math.floor(s*.1),hy+Math.floor(hh*.1),Math.floor(s*.25),Math.floor(hh*.5));
+    ctx.fillRect(hx+hw-Math.floor(s*.15),hy+Math.floor(hh*.1),Math.floor(s*.25),Math.floor(hh*.5));
+  }
+  if(hair==='buzz'){
+    ctx.fillRect(hx,hy,hw,Math.floor(hh*.22));
+    ctx.globalAlpha=.5;ctx.fillRect(hx,hy,hw,Math.floor(hh*.12));ctx.globalAlpha=1;
+  }
+  if(hair==='long'||hair==='braids'){
+    ctx.fillRect(hx-Math.floor(s*.1),hy-Math.floor(s*.1),hw+Math.floor(s*.2),Math.floor(hh*.36));
+    // long sides
+    ctx.fillRect(hx-Math.floor(s*.15),hy,Math.floor(s*.4),hh+Math.floor(s*1.2));
+    ctx.fillRect(hx+hw-Math.floor(s*.25),hy,Math.floor(s*.4),hh+Math.floor(s*1.2));
+    if(hair==='braids'){
+      // braid lines
+      ctx.fillStyle=darken(col,.4);
+      for(let i=0;i<4;i++){ctx.fillRect(hx-Math.floor(s*.15),hy+Math.floor(hh*.3)+i*Math.floor(s*.4),Math.floor(s*.4),Math.floor(s*.18));}
+    }
+  }
+  if(hair==='mohawk'){
+    ctx.fillRect(hx+Math.floor(hw*.3),hy-Math.floor(s*.6),Math.floor(hw*.4),Math.floor(hh*.9));
+    // mohawk tip
+    ctx.fillRect(hx+Math.floor(hw*.35),hy-Math.floor(s*1.1),Math.floor(hw*.3),Math.floor(s*.6));
+  }
+  if(hair==='ponytail'){
+    ctx.fillRect(hx,hy,hw,Math.floor(hh*.32));
+    // ponytail
+    ctx.fillRect(hx+hw-Math.floor(s*.35),hy+Math.floor(hh*.1),Math.floor(s*.4),hh+Math.floor(s*.8));
+    ctx.fillRect(hx+hw-Math.floor(s*.35),hy+hh+Math.floor(s*.8),Math.floor(s*.5),Math.floor(s*.35));
+  }
+}
+
+function darken(hex,amt){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  if(isNaN(r)){return hex;}
+  r=Math.max(0,Math.floor(r*(1-amt)));g=Math.max(0,Math.floor(g*(1-amt)));b=Math.max(0,Math.floor(b*(1-amt)));
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+/* ════════════════════════════════════
+   WIZARD NAVIGATION
+════════════════════════════════════ */
+function wizNext(){
+  if(step===0){
+    const n=document.getElementById('char-name-inp').value.trim();
+    if(!n){document.getElementById('name-err').textContent='Введите имя';return;}
+    if(n.length<2){document.getElementById('name-err').textContent='Минимум 2 символа';return;}
+    if(chars.some(c=>c.name.toLowerCase()===n.toLowerCase())){
+      document.getElementById('name-err').textContent='Имя занято';return;}
+    form.name=n;
+  }
+  if(step<STEP_LABELS.length-1){step++;renderStep();}
+  else{createChar();}
+}
+function wizBack(){
+  if(step>0){step--;renderStep();}
+}
+function setProp(key,val){form[key]=val;}
+
+/* ════════════════════════════════════
+   RENDER STEP
+════════════════════════════════════ */
+function renderStep(){
+  // Steps header
+  const sw=document.getElementById('wiz-steps');
+  sw.innerHTML='';
+  STEP_LABELS.forEach((lbl,i)=>{
+    const d=document.createElement('div');
+    d.className='wiz-step'+(i===step?' active':i<step?' done':'');
+    d.textContent=lbl;d.onclick=()=>{if(i<step){step=i;renderStep();}};
+    sw.appendChild(d);
+  });
+
+  // Show/hide pages
+  document.querySelectorAll('.wiz-page').forEach((p,i)=>p.classList.toggle('active',i===step));
+
+  // NAV buttons
+  document.getElementById('nav-back').style.display=step===0?'none':'block';
+  const nxt=document.getElementById('nav-next');
+  nxt.textContent=step===STEP_LABELS.length-1?'✓ СОЗДАТЬ →':'ДАЛЕЕ →';
+  nxt.className='nav-btn '+(step===STEP_LABELS.length-1?'finish':'next');
+
+  // Per-step content
+  if(step===0) renderStep0();
+  if(step===1) renderStep1();
+  if(step===2) renderStep2();
+  if(step===3) renderStep3();
+  if(step===4) renderStep4();
+  if(step===5) renderStep5();
+
+  renderPreview();
+}
+
+function renderStep0(){
+  document.getElementById('g-male').classList.toggle('active',form.gender==='male');
+  document.getElementById('g-female').classList.toggle('active',form.gender==='female');
+  const inp=document.getElementById('char-name-inp');
+  if(!inp.value)inp.value=form.name;
+}
+
+function renderStep1(){
+  // Faces
+  renderStrip('strip-face',FACES,form.face,(id)=>{form.face=id;renderPreview();},
+    (face,c)=>{const cv=c.canvas;drawFaceThumb(cv,face.id,form.gender,form.skinCol,form.hairCol);});
+  // Hairs
+  const hairs=form.gender==='male'?HAIRS_M:HAIRS_F;
+  if(!hairs.find(h=>h.id===form.hair))form.hair=hairs[0].id;
+  renderStrip('strip-hair',hairs,form.hair,(id)=>{form.hair=id;renderPreview();},
+    (hair,c)=>{const cv=c.canvas;drawHairThumb(cv,hair.id,form.gender,form.hairCol,form.skinCol);});
+  // Hair colors
+  renderPalette('pal-hair',HAIR_COLS,form.hairCol,(col)=>{form.hairCol=col;renderStep1();renderPreview();});
+  // Skin colors
+  renderPalette('pal-skin',SKIN_COLS,form.skinCol,(col)=>{form.skinCol=col;renderStep1();renderPreview();});
+}
+
+function renderStep2(){
+  renderStrip('strip-cloth',CLOTHES,form.cloth,(id)=>{form.cloth=id;renderPreview();},
+    (cloth,c)=>{c.querySelector('.si-lbl').textContent=cloth.icon+' '+cloth.label;});
+  renderPalette('pal-cloth',CLOTH_COLS,form.clothCol,(col)=>{form.clothCol=col;renderPreview();});
+}
+
+function renderStep3(){
+  document.getElementById('f-city').classList.toggle('active',form.faction==='city');
+  document.getElementById('f-mafia').classList.toggle('active',form.faction==='mafia');
+}
+
+function renderStep4(){
+  const cg=document.getElementById('class-grid');cg.innerHTML='';
+  CLASSES.forEach(cls=>{
+    const b=document.createElement('div');b.className='class-btn'+(form.classId===cls.id?' active':'');
+    b.innerHTML=`<span class="cbi">${cls.icon}</span><span class="cbn">${cls.name.split(' ')[0]}</span><span class="cbd">${cls.desc}</span>`;
+    b.onclick=()=>{form.classId=cls.id;renderStep4();renderPreview();};
+    cg.appendChild(b);
+  });
+  const cls=CLASSES.find(c=>c.id===form.classId);
+  document.getElementById('class-bonus').textContent=cls?cls.bonus:'';
+}
+
+function renderStep5(){
+  const cls=CLASSES.find(c=>c.id===form.classId)||CLASSES[0];
+  const sl=document.getElementById('stat-sliders');sl.innerHTML='';
+  STAT_DEFS.forEach(({key,label,col})=>{
+    const total=cls.base[key]+form.stats[key];
+    const maxT=cls.base[key]+STAT_PTS;
+    const row=document.createElement('div');row.className='stat-row';
+    row.innerHTML=`
+      <div class="stat-row-lbl">
+        <span>${label} (база ${cls.base[key]})</span>
+        <span style="color:${col}">${total}</span>
+      </div>
+      <div class="stat-track" data-key="${key}">
+        <div class="stat-fill" style="width:${total/maxT*100}%;background:${col}"></div>
+      </div>`;
+    const track=row.querySelector('.stat-track');
+    function handle(e){
+      const r=track.getBoundingClientRect(),pct=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+      const want=Math.round(pct*STAT_PTS),old=form.stats[key],diff=want-old;
+      if(diff>0)form.stats[key]=old+Math.min(diff,ptsLeft());
+      else form.stats[key]=Math.max(0,want);
+      renderStep5();renderPreview();
+    }
+    track.addEventListener('mousedown',e=>{handle(e);
+      const mv=e2=>handle(e2);
+      document.addEventListener('mousemove',mv);
+      document.addEventListener('mouseup',()=>document.removeEventListener('mousemove',mv),{once:true});
+    });
+    sl.appendChild(row);
+  });
+  const left=ptsLeft();
+  document.getElementById('pts-top').textContent=`[${left}/${STAT_PTS}]`;
+  document.getElementById('pts-info').textContent=`Очков осталось: ${left}`;
+}
+function ptsLeft(){return STAT_PTS-(form.stats.str+form.stats.def+form.stats.agi);}
+
+/* ── Strip helper ── */
+function renderStrip(id,items,active,onSelect,onDraw){
+  const el=document.getElementById(id);el.innerHTML='';
+  items.forEach(item=>{
+    const d=document.createElement('div');d.className='strip-item'+(item.id===active?' active':'');
+    const cv=document.createElement('canvas');cv.width=44;cv.height=44;
+    const lbl=document.createElement('div');lbl.className='si-lbl';lbl.textContent=item.label;
+    d.appendChild(cv);d.appendChild(lbl);
+    d.onclick=()=>{onSelect(item.id);el.querySelectorAll('.strip-item').forEach(x=>x.classList.remove('active'));d.classList.add('active');};
+    onDraw(item,d);
+    el.appendChild(d);
+  });
+}
+
+/* ── Palette helper ── */
+function renderPalette(id,cols,active,onSelect){
+  const el=document.getElementById(id);el.innerHTML='';
+  cols.forEach(c=>{
+    const d=document.createElement('div');d.className='pal-dot'+(c===active?' active':'');
+    d.style.background=c;d.style.color=c;
+    d.onclick=()=>{onSelect(c);el.querySelectorAll('.pal-dot').forEach(x=>x.classList.remove('active'));d.classList.add('active');};
+    el.appendChild(d);
+  });
+}
+
+/* ── Thumbnails ── */
+function drawFaceThumb(cv,faceId,gender,skinCol,hairCol){
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,44,44);
+  const s=2,hx=8,hy=6,hw=28,hh=30;
+  ctx.fillStyle=skinCol||'#f0c88a';ctx.fillRect(hx,hy,hw,hh);
+  ctx.fillStyle='#1a0a00';ctx.fillRect(hx+8,hy+11,5,5);ctx.fillRect(hx+16,hy+11,5,5);
+  if(faceId==='f2'){ctx.fillRect(hx+11,hy+8,6,2);}   // брови
+  if(faceId==='f4'){ctx.fillStyle=skinCol;ctx.fillRect(hx,hy+hh-4,hw,8);} // round chin
+  if(gender==='female'){ctx.fillStyle='#c05060';ctx.fillRect(hx+8,hy+22,12,3);}
+  // hair top
+  ctx.fillStyle=hairCol||'#3a2208';ctx.fillRect(hx,hy,hw,8);
+}
+function drawHairThumb(cv,hairId,gender,hairCol,skinCol){
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,44,44);
+  ctx.fillStyle=skinCol||'#f0c88a';ctx.fillRect(10,10,24,28);
+  ctx.fillStyle=hairCol||'#3a2208';
+  if(hairId==='short'||hairId==='bob'){ctx.fillRect(8,8,28,10);ctx.fillRect(8,12,4,14);ctx.fillRect(32,12,4,14);}
+  if(hairId==='buzz'){ctx.fillRect(10,10,24,4);}
+  if(hairId==='long'||hairId==='braids'){ctx.fillRect(8,8,28,10);ctx.fillRect(6,10,5,30);ctx.fillRect(33,10,5,30);}
+  if(hairId==='mohawk'){ctx.fillRect(18,2,8,20);}
+  if(hairId==='ponytail'){ctx.fillRect(8,8,28,10);ctx.fillRect(32,14,5,22);}
+}
+
+/* ── Preview ── */
+function renderPreview(){
+  const cv=document.getElementById('preview-canvas');
+  drawChar(cv,form,4.2);
+  document.getElementById('preview-name').textContent=form.name||'???';
+  const cls=CLASSES.find(c=>c.id===form.classId)||CLASSES[0];
+  const fac=FACTIONS.find(f=>f.id===form.faction)||FACTIONS[0];
+  document.getElementById('preview-tags').innerHTML=`
+    <span class="preview-tag" style="color:${fac.color};border-color:${fac.color}40">${fac.icon} ${fac.name}</span>
+    <span class="preview-tag" style="color:${cls.color};border-color:${cls.color}40">${cls.icon} ${cls.name.split(' ')[0]}</span>
+    <span class="preview-tag" style="color:rgba(180,200,240,0.5);border-color:rgba(180,200,240,0.1)">${form.gender==='male'?'♂':'♀'}</span>`;
+}
+
+/* ════════════════════════════════════
+   CREATE CHARACTER
+════════════════════════════════════ */
+function createChar(){
+  if(chars.length>=MAX_CHARS){showToast('Максимум 6 персонажей');return;}
+  const cls=CLASSES.find(c=>c.id===form.classId)||CLASSES[0];
+  const fac=FACTIONS.find(f=>f.id===form.faction)||FACTIONS[0];
+  const str=cls.base.str+form.stats.str;
+  const def=cls.base.def+form.stats.def;
+  const agi=cls.base.agi+form.stats.agi;
+  const goldBonus=form.faction==='mafia'?50:0;
+  const ch={
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    name:form.name,gender:form.gender,
+    face:form.face,hair:form.hair,hairCol:form.hairCol,skinCol:form.skinCol,
+    cloth:form.cloth,clothCol:form.clothCol,
+    faction:form.faction,classId:form.classId,
+    color:form.clothCol,
+    level:1,xp:0,hp:cls.base.hp,maxHp:cls.base.hp,
+    gold:250+goldBonus,speed:cls.base.speed,
+    str,def,agi,
+    inventory:new Array(20).fill(null),
+    playtime:0,createdAt:Date.now(),
+  };
+  ch.inventory[0]={id:'medkit',name:'Аптечка',icon:'🩹',desc:'Восстанавливает 30 HP.',usable:true};
+  chars.push(ch);saveChars();
+  selectedId=ch.id;
+  // Reset form
+  form={name:'',gender:'male',face:'f1',hair:'short',hairCol:HAIR_COLS[1],skinCol:SKIN_COLS[0],cloth:'casual',clothCol:CLOTH_COLS[0],faction:'city',classId:'medic',stats:{str:5,def:5,agi:5}};
+  step=0;
+  document.getElementById('char-name-inp').value='';
+  renderStep();renderGrid();updateDetail();
+  showToast(`${ch.name} создан!`);
+}
+
+/* ════════════════════════════════════
+   CHARS GRID
+════════════════════════════════════ */
+function renderGrid(){
+  const grid=document.getElementById('chars-grid');grid.innerHTML='';
   for(let i=0;i<MAX_CHARS;i++){
     const ch=chars[i]||null;
     const card=document.createElement('div');
     card.className='char-card'+(ch?'':' empty')+(selectedId===ch?.id?' selected':'');
-
     if(ch){
       const cls=CLASSES.find(c=>c.id===ch.classId)||CLASSES[0];
+      const fac=FACTIONS.find(f=>f.id===ch.faction)||FACTIONS[0];
       const sel=selectedId===ch.id;
       card.innerHTML=`
-        ${sel?'<div class="selected-mark"></div>':''}
-        <span class="char-slot-num">#${i+1}</span>
-        <button class="char-del" data-id="${ch.id}" title="Удалить">✕</button>
-        <div class="char-avatar"><canvas width="80" height="90" data-id="${ch.id}"></canvas></div>
-        <div class="char-name">${ch.name}</div>
-        <div class="char-meta">
-          <span class="char-class-badge" style="color:${cls.color};border-color:${cls.color}40">${cls.icon} ${cls.name}</span><br>
-          Ур. ${ch.level} &nbsp;•&nbsp; ${ch.hp}/${ch.maxHp} HP
+        ${sel?'<div class="sel-bar"></div>':''}
+        <span class="slot-num">#${i+1}</span>
+        <button class="card-del" data-id="${ch.id}">✕</button>
+        <canvas width="70" height="84" data-id="${ch.id}" style="image-rendering:pixelated;display:block;"></canvas>
+        <div class="card-name">${ch.name}</div>
+        <div class="card-meta">
+          <span class="card-badge" style="color:${cls.color};border-color:${cls.color}44">${cls.icon} ${cls.name.split(' ')[0]}</span>
+          <span class="card-badge" style="color:${fac.color};border-color:${fac.color}44">${fac.icon} ${fac.name}</span><br>
+          Ур. ${ch.level} • ${ch.hp}/${ch.maxHp}
         </div>
-        <div class="char-bars">
+        <div class="card-bars">
           <div class="cbar"><div class="cbar-fill" style="width:${ch.hp/ch.maxHp*100}%;background:${cls.color}"></div></div>
-          <div class="cbar"><div class="cbar-fill" style="width:${ch.xp/100*100}%;background:#3a8fff"></div></div>
-        </div>`;
-      card.onclick=(e)=>{
-        if(e.target.closest('.char-del'))return;
-        selectChar(ch.id);
-      };
-      card.querySelector('.char-del').onclick=(e)=>{
-        e.stopPropagation();
-        confirmDelete(ch.id,ch.name);
-      };
+          <div class="cbar"><div class="cbar-fill" style="width:${ch.xp}%;background:#3a8fff"></div></div>
+        </div>
+        <div class="faction-stripe" style="background:${fac.color}88"></div>`;
+      card.onclick=e=>{if(e.target.closest('.card-del'))return;selectChar(ch.id);};
+      card.querySelector('.card-del').onclick=e=>{e.stopPropagation();if(confirm(`Удалить «${ch.name}»?`))deleteChar(ch.id);};
     } else {
-      card.innerHTML=`<div class="add-icon">＋</div><div class="add-label">СОЗДАТЬ</div>`;
+      card.innerHTML=`<div class="add-icon">＋</div><div class="add-lbl">НОВЫЙ СЛОТ</div>`;
       card.onclick=()=>{
+        selectedId=null;updateDetail();
         document.getElementById('char-name-inp').focus();
-        document.getElementById('create-panel').scrollIntoView({behavior:'smooth'});
       };
     }
     grid.appendChild(card);
   }
-
-  // Draw avatars
-  grid.querySelectorAll('canvas[data-id]').forEach(c=>{
-    const ch=chars.find(x=>x.id===c.dataset.id);
-    if(ch) drawPixelChar(c,ch.color,ch.classId,3.2);
+  grid.querySelectorAll('canvas[data-id]').forEach(cv=>{
+    const ch=chars.find(x=>x.id===cv.dataset.id);
+    if(ch)drawChar(cv,ch,3.0);
   });
-
   document.getElementById('enter-btn').disabled=!selectedId;
 }
 
-/* ══════════════════════════════════
-   SELECT CHAR
-══════════════════════════════════ */
+/* ════════════════════════════════════
+   SELECT / DETAIL
+════════════════════════════════════ */
 function selectChar(id){
-  selectedId=(selectedId===id)?null:id;
-  renderGrid();
-  updateDetailPanel();
+  selectedId=selectedId===id?null:id;
+  renderGrid();updateDetail();
 }
-
-function updateDetailPanel(){
+function updateDetail(){
   const dp=document.getElementById('detail-panel');
   const cp=document.getElementById('create-panel');
   if(!selectedId){dp.style.display='none';cp.style.display='block';return;}
   const ch=chars.find(c=>c.id===selectedId);
   if(!ch){dp.style.display='none';return;}
-  const cls=CLASSES.find(c=>c.id===ch.classId)||CLASSES[0];
   cp.style.display='none';dp.style.display='block';
-  document.getElementById('detail-title').textContent=`▸ ${ch.name}`;
-  const dc=document.getElementById('detail-canvas');
-  drawPixelChar(dc,ch.color,ch.classId,3.5);
+  const cls=CLASSES.find(c=>c.id===ch.classId)||CLASSES[0];
+  const fac=FACTIONS.find(f=>f.id===ch.faction)||FACTIONS[0];
+  document.getElementById('detail-title').textContent=`▸ ${ch.name} ${ch.gender==='male'?'♂':'♀'}`;
+  const dc=document.getElementById('detail-canvas');drawChar(dc,ch,4.0);
   document.getElementById('detail-stats').innerHTML=`
-    <div class="dstat"><span>${cls.icon} Класс</span><span style="color:${cls.color}">${cls.name}</span></div>
-    <div class="dstat"><span>⭐ Уровень</span><span>${ch.level}</span></div>
-    <div class="dstat"><span>💰 Деньги</span><span>${ch.gold} руб.</span></div>
-    <div class="dstat"><span>🎮 Сыграно</span><span>${ch.playtime||0} мин.</span></div>
-    <div class="dbar-row">
-      <div class="dbar-lbl">HP</div>
-      <div class="dbar"><div class="dbar-fill" style="width:${ch.hp/ch.maxHp*100}%;background:${cls.color}"></div></div>
-    </div>
-    <div class="dbar-row">
-      <div class="dbar-lbl">XP</div>
-      <div class="dbar"><div class="dbar-fill" style="width:${ch.xp}%;background:#3a8fff"></div></div>
-    </div>
-    <div class="dbar-row">
-      <div class="dbar-lbl">СИЛ</div>
-      <div class="dbar"><div class="dbar-fill" style="width:${(ch.str/15)*100}%;background:#e83030"></div></div>
-    </div>
-    <div class="dbar-row">
-      <div class="dbar-lbl">ЛОВ</div>
-      <div class="dbar"><div class="dbar-fill" style="width:${(ch.agi/15)*100}%;background:#20c060"></div></div>
-    </div>
-    <div class="dbar-row">
-      <div class="dbar-lbl">ЗАЩ</div>
-      <div class="dbar"><div class="dbar-fill" style="width:${(ch.def/15)*100}%;background:#3a8fff"></div></div>
-    </div>
-    <div style="margin-top:8px;padding:8px;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);font-size:13px;color:rgba(245,166,35,0.7);">${cls.bonus}</div>
-  `;
+    <div class="ds"><span>Фракция</span><span style="color:${fac.color}">${fac.icon} ${fac.name}</span></div>
+    <div class="ds"><span>Класс</span><span style="color:${cls.color}">${cls.icon} ${cls.name.split(' ')[0]}</span></div>
+    <div class="ds"><span>Уровень</span><span>${ch.level}</span></div>
+    <div class="ds"><span>💰 Деньги</span><span>${ch.gold} руб.</span></div>
+    <div class="ds"><span>🎮 Сыграно</span><span>${ch.playtime||0} мин.</span></div>
+    <div class="dbar-r"><div class="dbar-l">HP</div><div class="dbar"><div class="dbar-f" style="width:${ch.hp/ch.maxHp*100}%;background:${cls.color}"></div></div></div>
+    <div class="dbar-r"><div class="dbar-l">XP</div><div class="dbar"><div class="dbar-f" style="width:${ch.xp}%;background:#3a8fff"></div></div></div>
+    <div class="dbar-r"><div class="dbar-l">СИЛ</div><div class="dbar"><div class="dbar-f" style="width:${ch.str/20*100}%;background:#e83030"></div></div></div>
+    <div class="dbar-r"><div class="dbar-l">ЛОВ</div><div class="dbar"><div class="dbar-f" style="width:${ch.agi/20*100}%;background:#20c060"></div></div></div>
+    <div class="dbar-r"><div class="dbar-l">ЗАЩ</div><div class="dbar"><div class="dbar-f" style="width:${ch.def/20*100}%;background:#3a8fff"></div></div></div>
+    <div style="margin-top:8px;padding:7px;background:rgba(245,166,35,0.05);border:1px solid rgba(245,166,35,0.18);font-size:13px;color:rgba(245,166,35,0.65);">${cls.bonus}</div>
+    <div style="margin-top:5px;padding:7px;background:${fac.color}18;border:1px solid ${fac.color}44;font-size:13px;color:${fac.color}cc;">${fac.bonus}</div>`;
 }
 
-/* ══════════════════════════════════
-   CLASS GRID
-══════════════════════════════════ */
-function renderClassGrid(){
-  const g=document.getElementById('class-grid');
-  g.innerHTML='';
-  CLASSES.forEach(cls=>{
-    const b=document.createElement('div');
-    b.className='class-btn'+(form.classId===cls.id?' active':'');
-    b.innerHTML=`<span class="ci">${cls.icon}</span><span class="cn">${cls.name}</span><span class="cd">${cls.desc}</span>`;
-    b.onclick=()=>{form.classId=cls.id;renderClassGrid();renderPreview();renderStatSliders();};
-    g.appendChild(b);
-  });
-}
-
-/* ══════════════════════════════════
-   COLOR PICKER
-══════════════════════════════════ */
-function renderColorPicker(){
-  const r=document.getElementById('color-row');
-  r.innerHTML='';
-  COLORS.forEach(c=>{
-    const d=document.createElement('div');
-    d.className='color-dot'+(form.color===c?' active':'');
-    d.style.background=c;d.style.color=c;
-    d.onclick=()=>{form.color=c;renderColorPicker();renderPreview();};
-    r.appendChild(d);
-  });
-}
-
-/* ══════════════════════════════════
-   STAT SLIDERS
-══════════════════════════════════ */
-const STAT_DEFS=[
-  {key:'str',label:'Сила',    color:'#e83030'},
-  {key:'agi',label:'Ловкость',color:'#20c060'},
-  {key:'def',label:'Защита',  color:'#3a8fff'},
-];
-function ptsUsed(){return form.stats.str+form.stats.agi+form.stats.def;}
-function ptsLeft(){return STAT_POINTS-ptsUsed();}
-
-function renderStatSliders(){
-  const sl=document.getElementById('stat-sliders');
-  sl.innerHTML='';
-  const cls=CLASSES.find(c=>c.id===form.classId)||CLASSES[0];
-
-  STAT_DEFS.forEach(({key,label,color})=>{
-    const total=cls.base[key]+form.stats[key];
-    const maxTotal=cls.base[key]+STAT_POINTS;
-    const pct=total/maxTotal*100;
-
-    const row=document.createElement('div');
-    row.className='stat-slide-row';
-    row.innerHTML=`
-      <div class="stat-slide-lbl">
-        <span>${label} (база ${cls.base[key]})</span>
-        <span style="color:${color}">${total}</span>
-      </div>
-      <div class="stat-track" data-key="${key}">
-        <div class="stat-fill" style="width:${pct}%;background:${color}"></div>
-      </div>`;
-
-    const track=row.querySelector('.stat-track');
-    // Click / drag on track
-    function handleTrack(e){
-      const rect=track.getBoundingClientRect();
-      const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-      const val=Math.round(pct*STAT_POINTS);
-      const old=form.stats[key];
-      const diff=val-old;
-      if(diff>0&&ptsLeft()<diff)form.stats[key]=old+ptsLeft();
-      else if(diff<0)form.stats[key]=Math.max(0,val);
-      else form.stats[key]=val;
-      renderStatSliders();
-    }
-    track.addEventListener('mousedown',e=>{handleTrack(e);
-      const up=()=>document.removeEventListener('mousemove',handleTrack);
-      document.addEventListener('mousemove',handleTrack);
-      document.addEventListener('mouseup',up,{once:true});
-    });
-
-    sl.appendChild(row);
-  });
-
-  const left=ptsLeft();
-  document.getElementById('pts-display').textContent=`Осталось очков: ${left}`;
-  document.getElementById('pts-left-top').textContent=`[${left} / ${STAT_POINTS}]`;
-}
-
-/* ══════════════════════════════════
-   PREVIEW
-══════════════════════════════════ */
-function renderPreview(){
-  const c=document.getElementById('preview-canvas');
-  drawPixelChar(c,form.color,form.classId,3.5);
-}
-
-/* ══════════════════════════════════
-   NAME INPUT
-══════════════════════════════════ */
-function onNameInput(){
-  form.name=document.getElementById('char-name-inp').value.trim();
-  document.getElementById('name-err').textContent='';
-}
-
-/* ══════════════════════════════════
-   CREATE CHARACTER
-══════════════════════════════════ */
-function createChar(){
-  const name=document.getElementById('char-name-inp').value.trim();
-  if(!name){document.getElementById('name-err').textContent='Введите имя персонажа';return;}
-  if(name.length<2){document.getElementById('name-err').textContent='Минимум 2 символа';return;}
-  if(chars.some(c=>c.name.toLowerCase()===name.toLowerCase())){
-    document.getElementById('name-err').textContent='Такое имя уже занято';return;
-  }
-  if(chars.length>=MAX_CHARS){showToast('Максимум 6 персонажей');return;}
-
-  const cls=CLASSES.find(c=>c.id===form.classId)||CLASSES[0];
-  const str=cls.base.str+form.stats.str;
-  const agi=cls.base.agi+form.stats.agi;
-  const def=cls.base.def+form.stats.def;
-
-  const ch={
-    id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),
-    name,
-    classId:form.classId,
-    color:form.color,
-    level:1,xp:0,
-    hp:cls.base.hp,maxHp:cls.base.hp,
-    gold:form.classId==='engineer'?375:250,
-    speed:cls.base.speed,
-    str,agi,def,
-    inventory:new Array(20).fill(null),
-    playtime:0,
-    createdAt:Date.now(),
-  };
-  // Стартовая аптечка
-  ch.inventory[0]={id:'medkit',name:'Аптечка',icon:'🩹',desc:'Восстанавливает 30 HP.',usable:true};
-
-  chars.push(ch);
-  saveChars();
-  selectedId=ch.id;
-  // Reset form
-  form={name:'',classId:'warrior',color:COLORS[0],stats:{str:5,def:3,agi:3}};
-  document.getElementById('char-name-inp').value='';
-  document.getElementById('name-err').textContent='';
-  renderClassGrid();renderColorPicker();renderStatSliders();renderPreview();
-  renderGrid();updateDetailPanel();
-  showToast(`${ch.name} создан!`);
-}
-
-/* ══════════════════════════════════
+/* ════════════════════════════════════
    DELETE
-══════════════════════════════════ */
-function confirmDelete(id,name){
-  if(!confirm(`Удалить персонажа «${name}»? Это действие нельзя отменить.`))return;
-  deleteChar(id);
-}
-function deleteSelected(){
-  if(!selectedId)return;
-  const ch=chars.find(c=>c.id===selectedId);
-  if(ch)confirmDelete(selectedId,ch.name);
-}
-function deleteChar(id){
-  chars=chars.filter(c=>c.id!==id);
-  if(selectedId===id){selectedId=null;}
-  saveChars();renderGrid();updateDetailPanel();
-  document.getElementById('create-panel').style.display='block';
-  document.getElementById('detail-panel').style.display='none';
-  showToast('Персонаж удалён');
-}
+════════════════════════════════════ */
+function deleteSelected(){if(selectedId){const ch=chars.find(c=>c.id===selectedId);if(ch&&confirm(`Удалить «${ch.name}»?`))deleteChar(selectedId);}}
+function deleteChar(id){chars=chars.filter(c=>c.id!==id);if(selectedId===id)selectedId=null;saveChars();renderGrid();updateDetail();showToast('Персонаж удалён');}
 
-/* ══════════════════════════════════
+/* ════════════════════════════════════
    ENTER GAME
-══════════════════════════════════ */
+════════════════════════════════════ */
 function enterGame(){
   if(!selectedId)return;
-  const ch=chars.find(c=>c.id===selectedId);
-  if(!ch)return;
-  // Обновляем время последней игры
-  ch.lastPlayed=Date.now();
-  saveChars();
-  // Передаём ID выбранного персонажа
+  const ch=chars.find(c=>c.id===selectedId);if(!ch)return;
+  ch.lastPlayed=Date.now();saveChars();
   localStorage.setItem('gorodok_active_char',selectedId);
-  // Переход в игру
   window.location.href='gorodok-game.html';
 }
 
-/* ══════════════════════════════════
+/* ════════════════════════════════════
    TOAST
-══════════════════════════════════ */
-let toastTimer=null;
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.style.display='block';
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.style.display='none',2400);
-}
+════════════════════════════════════ */
+let toastT=null;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',2400);}
 
-/* ══════════════════════════════════
+/* ════════════════════════════════════
    INIT
-══════════════════════════════════ */
+════════════════════════════════════ */
 loadChars();
 renderGrid();
-renderClassGrid();
-renderColorPicker();
-renderStatSliders();
-renderPreview();
-// Если пришли обратно из игры — авто-выбрать последнего
+renderStep();
 const lastActive=localStorage.getItem('gorodok_active_char');
-if(lastActive&&chars.find(c=>c.id===lastActive)){
-  selectedId=lastActive;renderGrid();updateDetailPanel();
-}
+if(lastActive&&chars.find(c=>c.id===lastActive)){selectedId=lastActive;renderGrid();updateDetail();}
 </script>
 </body>
 </html>
