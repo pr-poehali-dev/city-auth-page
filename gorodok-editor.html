@@ -189,37 +189,88 @@ const MAP_W = 50, MAP_H = 50;
 const CELL = 20; // px per cell in editor (base, before zoom)
 
 /* ════════════════════════════════════
-   SPRITES
+   SPRITES — процедурные, на offscreen canvas
+   Тот же код что в gorodok-game.html,
+   адаптирован под CELL-сетку редактора.
 ════════════════════════════════════ */
-const CDN = 'https://cdn.poehali.dev/projects/3fddb330-2995-4a7b-b6ba-ce1064d5f9a6/files/';
-const SPRITE_FILES = {
-  grass:      'd871757c-9dde-40a7-a177-4341c0e4249a.jpg',
-  dirt:       'f5cacf8d-6d63-4fc9-bbcd-c01ac4ce037c.jpg',
-  road_h:     '8031c542-0d9f-4a54-93de-7bc683a9705f.jpg',
-  road_v:     'd3125317-a8ca-43e9-9c94-4693b534eb05.jpg',
-  road_cross: 'b87742b9-788c-46f3-8881-a3c21cdfcaf7.jpg',
-  road_t:     '40778aac-a674-4742-a178-fd49ac4a67c6.jpg',
-  road_corner:'fe232868-37c5-478d-9ddb-0eda06385f37.jpg',
-  tree_oak:   'ae24076c-da71-4e90-be4d-dc0d509257da.jpg',
-  tree_pine:  '7a0a9aa3-7e2a-4c24-b8b5-72f30d988214.jpg',
-};
-const SPRITES = {};
-Object.entries(SPRITE_FILES).forEach(([key, file]) => {
-  const img = new Image();
-  img.src = CDN + file;
-  img.onload = () => render();
-  SPRITES[key] = img;
-});
+// Генерируем спрайты в пространстве TW=64,TH=32
+// и рисуем их масштабированными под cellPx
+const TW_SP=64,TH_SP=32;
+const ESP={}; // editor sprites
 
-// Маппинг tile_type → sprite key
-const TYPE_SPRITE = { 0:'grass', 1:'road_h', 3:'tree_oak' };
-
-function getSpriteKey(tileType, x, y) {
-  if (tileType === 3) return (x + y) % 2 === 0 ? 'tree_oak' : 'tree_pine';
-  return TYPE_SPRITE[tileType] || null;
+function mkc(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
+function isoP(c,ox,oy,tw,th){
+  c.beginPath();c.moveTo(ox,oy);c.lineTo(ox+tw/2,oy+th/2);
+  c.lineTo(ox,oy+th);c.lineTo(ox-tw/2,oy+th/2);c.closePath();
 }
 
-function imgReady(img) { return img && img.complete && img.naturalWidth > 0; }
+// ТРАВА
+(()=>{
+  const cv=mkc(TW_SP+2,TH_SP+2),c=cv.getContext('2d');
+  const ox=TW_SP/2+1,oy=1;
+  isoP(c,ox,oy,TW_SP,TH_SP);c.fillStyle='#2a5c18';c.fill();
+  c.fillStyle='#1e4510';
+  c.beginPath();c.moveTo(ox,oy+TH_SP);c.lineTo(ox-TW_SP/2,oy+TH_SP/2);c.lineTo(ox,oy+TH_SP/2);c.closePath();c.fill();
+  c.fillStyle='#357020';
+  c.beginPath();c.moveTo(ox,oy+TH_SP);c.lineTo(ox+TW_SP/2,oy+TH_SP/2);c.lineTo(ox,oy+TH_SP/2);c.closePath();c.fill();
+  c.strokeStyle='rgba(80,160,30,0.3)';c.lineWidth=1;
+  for(let i=0;i<8;i++){const px=ox-TW_SP/2+8+i*7,py=oy+TH_SP/2+Math.sin(i*1.9)*2;c.beginPath();c.moveTo(px,py+2);c.lineTo(px-1,py-3);c.stroke();}
+  isoP(c,ox,oy,TW_SP,TH_SP);c.strokeStyle='rgba(0,0,0,0.18)';c.lineWidth=1;c.stroke();
+  ESP.grass=cv;
+})();
+
+// ДОРОГА
+function makeERoad(up,dn,lt,rt){
+  const cv=mkc(TW_SP+2,TH_SP+2),c=cv.getContext('2d');
+  const ox=TW_SP/2+1,oy=1;
+  isoP(c,ox,oy,TW_SP,TH_SP);c.fillStyle='#2a2e38';c.fill();
+  c.save();isoP(c,ox,oy,TW_SP,TH_SP);c.clip();
+  c.strokeStyle='rgba(255,240,80,0.7)';c.lineWidth=1.5;c.setLineDash([4,5]);
+  if(lt||rt||(!up&&!dn)){c.beginPath();c.moveTo(ox-TW_SP/2,oy+TH_SP/2);c.lineTo(ox+TW_SP/2,oy+TH_SP/2);c.stroke();}
+  if(up||dn){c.beginPath();c.moveTo(ox,oy);c.lineTo(ox,oy+TH_SP);c.stroke();}
+  c.setLineDash([]);c.restore();
+  isoP(c,ox,oy,TW_SP,TH_SP);c.strokeStyle='rgba(0,0,0,0.25)';c.lineWidth=1;c.stroke();
+  return cv;
+}
+ESP.road_h=makeERoad(0,0,1,1);ESP.road_v=makeERoad(1,1,0,0);
+ESP.road_cross=makeERoad(1,1,1,1);ESP.road_corner=makeERoad(1,0,0,1);
+ESP.road_t=makeERoad(1,0,1,1);
+
+// ДЕРЕВО (дуб) — квадратный для превью
+(()=>{
+  const S=TH_SP*3+2,cv=mkc(TW_SP+2,S),c=cv.getContext('2d');
+  const ox=TW_SP/2+1,oy=S-TH_SP-1;
+  isoP(c,ox,oy,TW_SP,TH_SP);c.fillStyle='#1e4510';c.fill();
+  isoP(c,ox,oy,TW_SP,TH_SP);c.strokeStyle='rgba(0,0,0,0.18)';c.lineWidth=1;c.stroke();
+  c.fillStyle='#5c3a1a';c.fillRect(ox-3,oy+TH_SP/2-TH_SP-2,6,TH_SP+6);
+  [['#1c5c10','#144008'],['#236e14','#1a5010'],['#2a7e18','#205c12']].forEach(([col,dk],l)=>{
+    const ly=oy+TH_SP/2-TH_SP-l*11,lw=(TW_SP*0.55)*(1-l*0.15),lh=TH_SP*0.6+l*2;
+    c.fillStyle=dk;c.beginPath();c.moveTo(ox,ly-lh*0.5+3);c.lineTo(ox+lw/2+2,ly+3);c.lineTo(ox-lw/2-2,ly+3);c.closePath();c.fill();
+    c.fillStyle=col;c.beginPath();c.moveTo(ox,ly-lh*0.55);c.lineTo(ox+lw/2,ly);c.lineTo(ox-lw/2,ly);c.closePath();c.fill();
+  });
+  ESP.tree_oak=cv;
+})();
+
+// ДЕРЕВО (сосна)
+(()=>{
+  const S=TH_SP*3+2,cv=mkc(TW_SP+2,S),c=cv.getContext('2d');
+  const ox=TW_SP/2+1,oy=S-TH_SP-1;
+  isoP(c,ox,oy,TW_SP,TH_SP);c.fillStyle='#1e4510';c.fill();
+  isoP(c,ox,oy,TW_SP,TH_SP);c.strokeStyle='rgba(0,0,0,0.18)';c.lineWidth=1;c.stroke();
+  c.fillStyle='#4a2e10';c.fillRect(ox-3,oy+TH_SP/2-TH_SP,6,TH_SP+4);
+  [[TW_SP*0.28,'#0d3a0a'],[TW_SP*0.38,'#104a0d'],[TW_SP*0.46,'#145a10'],[TW_SP*0.32,'#186814'],[TW_SP*0.18,'#1c7018']].forEach(([w,col],i)=>{
+    const ly=oy+TH_SP/2-TH_SP-2-i*11,h=TH_SP*0.45;
+    c.fillStyle=col;c.beginPath();c.moveTo(ox,ly-h*0.55);c.lineTo(ox+w/2,ly);c.lineTo(ox-w/2,ly);c.closePath();c.fill();
+  });
+  ESP.tree_pine=cv;
+})();
+
+function getEditorSprite(tileType, x, y) {
+  if(tileType===0) return ESP.grass;
+  if(tileType===1) return ESP.road_h;
+  if(tileType===3) return (x+y)%2===0 ? ESP.tree_oak : ESP.tree_pine;
+  return null;
+}
 
 /* ════════════════════════════════════
    TILE DEFINITIONS
@@ -317,12 +368,19 @@ function render() {
 
       const fx = Math.floor(sx), fy = Math.floor(sy);
       const fw = Math.ceil(cellPx)+1, fh = Math.ceil(cellPx)+1;
-      const spKey = getSpriteKey(cell.tile_type, x, y);
-      const img = spKey ? SPRITES[spKey] : null;
+      const sp = getEditorSprite(cell.tile_type, x, y);
 
-      if (imgReady(img)) {
-        // Деревья рисуем с превью-масштабом (квадратная картинка на ячейку)
-        ctx.drawImage(img, fx, fy, fw, fh);
+      if (sp) {
+        if (cell.tile_type === 3) {
+          // деревья: сначала трава, потом дерево
+          ctx.drawImage(ESP.grass, fx - 1, fy - 1, fw + 2, fh + 2);
+          const ratio = sp.height / sp.width;
+          const th = fw * ratio;
+          ctx.drawImage(sp, fx, fy + fh - th, fw, th);
+        } else {
+          // рисуем спрайт растянуто на ячейку (+1px с каждой стороны чтоб не было швов)
+          ctx.drawImage(sp, fx - 1, fy - 1, fw + 2, fh + 2);
+        }
       } else {
         // fallback — цвет + иконка
         ctx.fillStyle = tile.color;

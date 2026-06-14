@@ -593,45 +593,175 @@ const mmCanvas=document.getElementById('minimap');
 const mmCtx=mmCanvas.getContext('2d');
 
 /* ═══════════════════════════════════
-   SPRITES
+   PROCEDURAL SPRITES (offscreen canvas)
+   Все спрайты рисуются в ромбе TW×TH точно встык.
+   Деревья — TW × TH*3 (возвышаются над тайлом).
 ═══════════════════════════════════ */
-const CDN='https://cdn.poehali.dev/projects/3fddb330-2995-4a7b-b6ba-ce1064d5f9a6/files/';
-const SPRITES={};
-const SPRITE_MAP={
-  grass:    'd871757c-9dde-40a7-a177-4341c0e4249a.jpg',
-  dirt:     'f5cacf8d-6d63-4fc9-bbcd-c01ac4ce037c.jpg',
-  road_h:   '8031c542-0d9f-4a54-93de-7bc683a9705f.jpg',
-  road_v:   'd3125317-a8ca-43e9-9c94-4693b534eb05.jpg',
-  road_cross:'b87742b9-788c-46f3-8881-a3c21cdfcaf7.jpg',
-  road_t:   '40778aac-a674-4742-a178-fd49ac4a67c6.jpg',
-  road_corner:'fe232868-37c5-478d-9ddb-0eda06385f37.jpg',
-  tree_oak: 'ae24076c-da71-4e90-be4d-dc0d509257da.jpg',
-  tree_pine:'7a0a9aa3-7e2a-4c24-b8b5-72f30d988214.jpg',
-};
-// Спрайты для базовых типов (fallback по tile_type)
-const SPRITE_BY_TYPE={
-  0:'grass', 1:'road_h', 3:'tree_oak',
-};
-let spritesReady=0,spritesTotal=Object.keys(SPRITE_MAP).length;
-Object.entries(SPRITE_MAP).forEach(([key,file])=>{
-  const img=new Image();
-  img.src=CDN+file;
-  img.onload=()=>{spritesReady++;};
-  SPRITES[key]=img;
-});
+const SP={}; // key → OffscreenCanvas / HTMLCanvasElement
 
-// Нарисовать спрайт в изометрическом ромбе через clip
+function makeCanvas(w,h){
+  const c=document.createElement('canvas');c.width=w;c.height=h;return c;
+}
+
+// ── изо-ромб path (top-center = 0,0; width=TW, height=TH)
+function isoPath(c,ox,oy){
+  c.beginPath();
+  c.moveTo(ox,oy);
+  c.lineTo(ox+TW/2,oy+TH/2);
+  c.lineTo(ox,oy+TH);
+  c.lineTo(ox-TW/2,oy+TH/2);
+  c.closePath();
+}
+
+// ─────── ТРАВА ───────
+(()=>{
+  const cv=makeCanvas(TW+2,TH+2),c=cv.getContext('2d');
+  const ox=TW/2+1,oy=1;
+  // базовый зелёный
+  isoPath(c,ox,oy);c.fillStyle='#2a5c18';c.fill();
+  // грани (левая темнее, правая светлее)
+  c.fillStyle='#1e4510';
+  c.beginPath();c.moveTo(ox,oy+TH);c.lineTo(ox-TW/2,oy+TH/2);c.lineTo(ox,oy+TH/2);c.closePath();c.fill();
+  c.fillStyle='#357020';
+  c.beginPath();c.moveTo(ox,oy+TH);c.lineTo(ox+TW/2,oy+TH/2);c.lineTo(ox,oy+TH/2);c.closePath();c.fill();
+  // травяные штрихи
+  c.strokeStyle='rgba(80,160,30,0.35)';c.lineWidth=1;
+  for(let i=0;i<10;i++){
+    const px=ox-TW/2+6+i*6,py=oy+TH/2+Math.sin(i*1.7)*3;
+    c.beginPath();c.moveTo(px,py+2);c.lineTo(px-1,py-3);c.stroke();
+    c.beginPath();c.moveTo(px+3,py+1);c.lineTo(px+2,py-4);c.stroke();
+  }
+  // контур
+  isoPath(c,ox,oy);c.strokeStyle='rgba(0,0,0,0.18)';c.lineWidth=1;c.stroke();
+  SP.grass=cv;
+})();
+
+// ─────── ДОРОГА (базовая — горизонталь) ───────
+function makeRoad(up,down,left,right){
+  const cv=makeCanvas(TW+2,TH+2),c=cv.getContext('2d');
+  const ox=TW/2+1,oy=1;
+  // асфальт — заливаем ромб
+  isoPath(c,ox,oy);c.fillStyle='#2a2e38';c.fill();
+  // полосы разметки по диагоналям изо-проекции
+  // в изо: ось X идёт вправо-вниз, ось Y — влево-вниз
+  // "вертикаль" (по Y изо) = линия от top до bottom
+  // "горизонталь" (по X изо) = линия от left до right
+  c.save();c.clip(); // остаёмся внутри ромба
+  isoPath(c,ox,oy);c.clip();
+  c.strokeStyle='rgba(255,240,80,0.7)';c.lineWidth=1.5;c.setLineDash([4,5]);
+  if(left||right||(!up&&!down)){
+    // горизонтальная дорога: полоса по оси X (right-down диагональ)
+    c.beginPath();c.moveTo(ox-TW/2,oy+TH/2);c.lineTo(ox+TW/2,oy+TH/2);c.stroke();
+  }
+  if(up||down){
+    // вертикальная дорога: полоса по оси Y (left-down диагональ)
+    c.beginPath();c.moveTo(ox,oy);c.lineTo(ox,oy+TH);c.stroke();
+  }
+  c.setLineDash([]);
+  // обочины
+  c.strokeStyle='rgba(255,255,255,0.12)';c.lineWidth=2;
+  if(left||right||(!up&&!down)){
+    c.beginPath();c.moveTo(ox-TW/2+3,oy+TH/2-1);c.lineTo(ox+TW/2-3,oy+TH/2-1);c.stroke();
+    c.beginPath();c.moveTo(ox-TW/2+3,oy+TH/2+1);c.lineTo(ox+TW/2-3,oy+TH/2+1);c.stroke();
+  }
+  if(up||down){
+    c.beginPath();c.moveTo(ox-1,oy+2);c.lineTo(ox-1,oy+TH-2);c.stroke();
+    c.beginPath();c.moveTo(ox+1,oy+2);c.lineTo(ox+1,oy+TH-2);c.stroke();
+  }
+  c.restore();
+  // контур ромба
+  isoPath(c,ox,oy);c.strokeStyle='rgba(0,0,0,0.25)';c.lineWidth=1;c.stroke();
+  return cv;
+}
+SP.road_h     =makeRoad(false,false,true ,true );
+SP.road_v     =makeRoad(true ,true ,false,false);
+SP.road_cross =makeRoad(true ,true ,true ,true );
+SP.road_t     =makeRoad(true ,false,true ,true );
+SP.road_tL    =makeRoad(true ,true ,true ,false);
+SP.road_tR    =makeRoad(true ,true ,false,true );
+SP.road_tD    =makeRoad(false,true ,true ,true );
+SP.road_corner=makeRoad(true ,false,false,true );
+SP.road_cLD   =makeRoad(false,true ,true ,false);
+SP.road_cRD   =makeRoad(false,true ,false,true );
+SP.road_cLU   =makeRoad(true ,false,true ,false);
+SP.road_end_r =makeRoad(false,false,true ,false);
+SP.road_end_l =makeRoad(false,false,false,true );
+SP.road_end_u =makeRoad(true ,false,false,false);
+SP.road_end_d =makeRoad(false,true ,false,false);
+
+// ─────── ДЕРЕВО (дуб) ───────
+(()=>{
+  const H=TH*3+2;
+  const cv=makeCanvas(TW+2,H),c=cv.getContext('2d');
+  const ox=TW/2+1,oy=H-TH-1;
+  // земля под деревом
+  isoPath(c,ox,oy);c.fillStyle='#1e4510';c.fill();
+  isoPath(c,ox,oy);c.strokeStyle='rgba(0,0,0,0.2)';c.lineWidth=1;c.stroke();
+  // ствол
+  const trW=5,trH=TH+6;
+  c.fillStyle='#5c3a1a';
+  c.fillRect(ox-trW/2,oy+TH/2-trH+4,trW,trH);
+  c.fillStyle='#3a2008';
+  c.fillRect(ox-trW/2,oy+TH/2-trH+4,2,trH);
+  // крона — 3 слоя
+  const leafCols=['#1c5c10','#236e14','#2a7e18'];
+  const darks   =['#144008','#1a5010','#205c12'];
+  for(let l=2;l>=0;l--){
+    const ly=oy+TH/2-trH+2-l*11;
+    const lw=(TW*0.55)*(1-l*0.15);
+    const lh=TH*0.6+l*2;
+    // тень
+    c.fillStyle=darks[l];
+    c.beginPath();c.moveTo(ox,ly-lh*0.5+3);c.lineTo(ox+lw/2+2,ly+3);c.lineTo(ox-lw/2-2,ly+3);c.closePath();c.fill();
+    // крона
+    c.fillStyle=leafCols[l];
+    c.beginPath();c.moveTo(ox,ly-lh*0.55);c.lineTo(ox+lw/2,ly);c.lineTo(ox-lw/2,ly);c.closePath();c.fill();
+    // блик
+    c.fillStyle='rgba(100,200,60,0.15)';
+    c.beginPath();c.moveTo(ox-lw*0.15,ly-lh*0.55);c.lineTo(ox+lw*0.1,ly-lh*0.2);c.lineTo(ox-lw*0.3,ly-lh*0.2);c.closePath();c.fill();
+  }
+  SP.tree_oak=cv;
+})();
+
+// ─────── ДЕРЕВО (сосна) ───────
+(()=>{
+  const H=TH*3+2;
+  const cv=makeCanvas(TW+2,H),c=cv.getContext('2d');
+  const ox=TW/2+1,oy=H-TH-1;
+  // земля
+  isoPath(c,ox,oy);c.fillStyle='#1e4510';c.fill();
+  isoPath(c,ox,oy);c.strokeStyle='rgba(0,0,0,0.2)';c.lineWidth=1;c.stroke();
+  // ствол
+  c.fillStyle='#4a2e10';c.fillRect(ox-3,oy+TH/2-TH,6,TH+4);
+  c.fillStyle='#2a1a08';c.fillRect(ox-3,oy+TH/2-TH,2,TH+4);
+  // ярусы
+  const tiers=[
+    {y:oy+TH/2-TH-2, w:TW*0.28,h:TH*0.45,col:'#0d3a0a',dk:'#081e06'},
+    {y:oy+TH/2-TH-12,w:TW*0.38,h:TH*0.5, col:'#104a0d',dk:'#0a2808'},
+    {y:oy+TH/2-TH-24,w:TW*0.46,h:TH*0.55,col:'#145a10',dk:'#0c3209'},
+    {y:oy+TH/2-TH-38,w:TW*0.32,h:TH*0.4, col:'#186814',dk:'#0e3a0b'},
+    {y:oy+TH/2-TH-50,w:TW*0.18,h:TH*0.35,col:'#1c7018',dk:'#10420c'},
+  ];
+  tiers.forEach(({y,w,h,col,dk})=>{
+    c.fillStyle=dk;
+    c.beginPath();c.moveTo(ox,y-h*0.55+3);c.lineTo(ox+w/2+2,y+3);c.lineTo(ox-w/2-2,y+3);c.closePath();c.fill();
+    c.fillStyle=col;
+    c.beginPath();c.moveTo(ox,y-h*0.55);c.lineTo(ox+w/2,y);c.lineTo(ox-w/2,y);c.closePath();c.fill();
+  });
+  SP.tree_pine=cv;
+})();
+
+// ─────── РИСОВАТЬ СПРАЙТ В ИЗО-РОМБЕ ───────
 function drawSpriteIso(spKey,sx,sy){
-  const img=SPRITES[spKey];
-  if(!img||!img.complete||img.naturalWidth===0) return false;
-  ctx.save();
-  // clip diamond
-  ctx.beginPath();
-  ctx.moveTo(sx,sy);ctx.lineTo(sx+TW/2,sy+TH/2);
-  ctx.lineTo(sx,sy+TH);ctx.lineTo(sx-TW/2,sy+TH/2);
-  ctx.closePath();ctx.clip();
-  ctx.drawImage(img,sx-TW/2,sy,TW,TH);
-  ctx.restore();
+  const sp=SP[spKey];if(!sp)return false;
+  ctx.drawImage(sp,sx-TW/2-1,sy-1);
+  return true;
+}
+// деревья рисуем иначе — с подъёмом вверх, без clip
+function drawTreeSprite(spKey,sx,sy){
+  const sp=SP[spKey];if(!sp)return false;
+  const H=sp.height;
+  ctx.drawImage(sp,sx-TW/2-1,sy+TH-H+1);
   return true;
 }
 
@@ -688,59 +818,40 @@ function drawTile(tx,ty,sx,sy){
   const isNear=nearZone&&nearZone.nearTiles.some(n=>n.x===tx&&n.y===ty);
 
   if(t===T.GRASS){
-    if(!drawSpriteIso('grass',sx,sy)){
-      fillTile(sx,sy,COL.grass[ci]);
-      strokeTile(sx,sy,'rgba(0,0,0,0.1)',0.4);
-    }
+    drawSpriteIso('grass',sx,sy);
     if(hover){fillTile(sx,sy,'rgba(255,220,80,0.22)');}
     return;
   }
   if(t===T.ROAD){
-    // определяем тип дороги по соседям
-    const up   =ty>0      && map[ty-1]?.[tx]===T.ROAD;
-    const down =ty<MAP_H-1&& map[ty+1]?.[tx]===T.ROAD;
-    const left =tx>0      && map[ty]?.[tx-1]===T.ROAD;
-    const right=tx<MAP_W-1&& map[ty]?.[tx+1]===T.ROAD;
-    const conn=up+down+left+right;
-    let spKey='road_h';
-    if(conn>=3)                          spKey='road_cross';
+    const up   =ty>0       && map[ty-1]?.[tx]===T.ROAD;
+    const dn   =ty<MAP_H-1 && map[ty+1]?.[tx]===T.ROAD;
+    const lt   =tx>0       && map[ty]?.[tx-1]===T.ROAD;
+    const rt   =tx<MAP_W-1 && map[ty]?.[tx+1]===T.ROAD;
+    const conn =up+dn+lt+rt;
+    let spKey;
+    if(conn>=3){ spKey='road_cross'; }
     else if(conn===2){
-      if(up&&down)                       spKey='road_v';
-      else if(left&&right)               spKey='road_h';
-      else if(up&&right||down&&left)     spKey='road_corner';
-      else                               spKey='road_t';
-    } else if(up||down)                  spKey='road_v';
-    if(!drawSpriteIso(spKey,sx,sy)){
-      fillTile(sx,sy,COL.road[ci%3]);
-      strokeTile(sx,sy,'rgba(0,0,0,0.12)',0.4);
-      ctx.save();ctx.globalAlpha=0.18;ctx.strokeStyle='#c0ccd8';ctx.lineWidth=1;ctx.setLineDash([4,6]);
-      ctx.beginPath();ctx.moveTo(sx-TW*.25,sy+TH*.75);ctx.lineTo(sx+TW*.25,sy+TH*.25);ctx.stroke();
-      ctx.setLineDash([]);ctx.restore();
-    }
+      if(up&&dn)       spKey='road_v';
+      else if(lt&&rt)  spKey='road_h';
+      else if(up&&rt)  spKey='road_corner';
+      else if(up&&lt)  spKey='road_cLU';
+      else if(dn&&rt)  spKey='road_cRD';
+      else if(dn&&lt)  spKey='road_cLD';
+      else             spKey='road_h';
+    } else if(conn===1){
+      if(lt)  spKey='road_end_l';
+      else if(rt) spKey='road_end_r';
+      else if(up) spKey='road_end_u';
+      else        spKey='road_end_d';
+    } else { spKey='road_h'; }
+    drawSpriteIso(spKey,sx,sy);
     if(hover){fillTile(sx,sy,'rgba(255,220,80,0.18)');}
     return;
   }
   if(t===T.TREE){
-    // чередуем дуб/сосну по координатам
+    drawSpriteIso('grass',sx,sy);
     const treeKey=(tx+ty)%2===0?'tree_oak':'tree_pine';
-    if(!drawSpriteIso('grass',sx,sy)){
-      fillTile(sx,sy,COL.tree[ci]);
-    }
-    const img=SPRITES[treeKey];
-    if(img&&img.complete&&img.naturalWidth>0){
-      // деревья выше тайла — рисуем со сдвигом вверх без клипа
-      const iw=TW,ih=TW*1.5;
-      ctx.drawImage(img,sx-iw/2,sy+TH/2-ih+TH*.3,iw,ih);
-    } else {
-      strokeTile(sx,sy,'rgba(0,0,0,0.1)',0.3);
-      const trH=20;
-      ctx.fillStyle=COL.trunk[ci%2];ctx.fillRect(sx-2.5,sy+TH/2-trH*.4,5,trH);
-      for(let l=0;l<3;l++){
-        const ly=sy+TH/2-trH*.35-(l*11),lw=(TW*.52)*(1-l*.18),lh=TH*.55+l*2;
-        ctx.fillStyle=COL.treeTop[(ci+l)%4];
-        ctx.beginPath();ctx.moveTo(sx,ly-lh*.55);ctx.lineTo(sx+lw/2,ly);ctx.lineTo(sx-lw/2,ly);ctx.closePath();ctx.fill();
-      }
-    }
+    drawTreeSprite(treeKey,sx,sy);
     if(hover){strokeTile(sx,sy,'rgba(255,220,80,0.6)',1.5);}
     return;
   }
