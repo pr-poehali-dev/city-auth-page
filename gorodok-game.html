@@ -548,7 +548,10 @@ const bots=BNAMES.map((name,i)=>{
 ═══════════════════════════════════ */
 function iso(tx,ty){return{x:(tx-ty)*(TW/2),y:(tx+ty)*(TH/2)};}
 function screenToTile(sx,sy){
-  const rx=sx-(CW/2-camX),ry=sy-(CH/2-camY);
+  // отменяем zoom-трансформацию: translate(CW/2,CH/2) scale(zoom) translate(-CW/2,-CH/2)
+  const wx=(sx-CW/2)/zoom+CW/2;
+  const wy=(sy-CH/2)/zoom+CH/2;
+  const rx=wx-(CW/2-camX),ry=wy-(CH/2-camY);
   return{tx:Math.floor((rx/(TW/2)+ry/(TH/2))/2),ty:Math.floor((ry/(TH/2)-rx/(TW/2))/2)};
 }
 
@@ -1059,6 +1062,18 @@ document.addEventListener('keyup',e=>{
 /* ═══════════════════════════════════
    RENDER LOOP
 ═══════════════════════════════════ */
+/* ═══════════════════════════════════
+   ZOOM
+═══════════════════════════════════ */
+let zoom=1.0;
+const ZOOM_MIN=0.4,ZOOM_MAX=2.5,ZOOM_STEP=0.1;
+
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const delta=e.deltaY>0?-ZOOM_STEP:ZOOM_STEP;
+  zoom=Math.min(ZOOM_MAX,Math.max(ZOOM_MIN,Math.round((zoom+delta)*10)/10));
+},{passive:false});
+
 let lastT=0,fps=60,fpsTimer=0,fpsCnt=0;
 
 function render(now){
@@ -1081,13 +1096,20 @@ function render(now){
   // CLEAR
   ctx.fillStyle='#04060e';ctx.fillRect(0,0,CW,CH);
 
-  // Collect & sort tiles
+  // ── World (zoomed around screen centre)
+  ctx.save();
+  ctx.translate(CW/2,CH/2);
+  ctx.scale(zoom,zoom);
+  ctx.translate(-CW/2,-CH/2);
+
+  // Collect & sort tiles (culling с учётом зума)
+  const cullPad=TW*3/zoom;
   const tiles=[];
   for(let ty=0;ty<MAP_H;ty++){
     for(let tx=0;tx<MAP_W;tx++){
       const p=iso(tx,ty);
       const sx=CW/2+(p.x-camX),sy=CH/2+(p.y-camY);
-      if(sx<-TW*2||sx>CW+TW*2||sy<-TH*6||sy>CH+TH*6)continue;
+      if(sx<-cullPad||sx>CW+cullPad||sy<-TH*6/zoom||sy>CH+TH*6/zoom)continue;
       tiles.push({tx,ty,sx,sy,d:tx+ty});
     }
   }
@@ -1112,7 +1134,9 @@ function render(now){
   ].sort((a,b)=>a.d-b.d);
   allChars.forEach(ch=>drawChar(ch.px,ch.py,ch,ch.name,ch.isPlayer,ch.moving));
 
-  // Minimap
+  ctx.restore(); // ── конец зумированной зоны
+
+  // Minimap (вне зума)
   drawMinimap();
 
   requestAnimationFrame(render);
