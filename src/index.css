@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  image-rendering: pixelated;
+}
+
+input,
+textarea,
+select,
+button,
+a {
+  image-rendering: auto;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
