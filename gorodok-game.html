@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Городок — Игра</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#f5a623;--gold-lt:#ffd166;--gold-dk:#c47c10;
+  --bg:#07090f;--panel:#0b0f1c;--border:rgba(245,166,35,0.35);
+  --input-bg:rgba(10,18,42,0.9);--err:#ff5252;--ok:#69f0ae;
+  --hp:#e83030;--xp:#3a8fff;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'VT323',monospace;}
+.game-container{
+  display:grid;
+  grid-template-columns:180px 1fr 300px;
+  grid-template-rows:1fr;
+  width:100vw;height:100vh;gap:0;
+}
+
+/* ═══ LEFT PANEL — STATS ═══ */
+.stats-panel{
+  background:var(--panel);border-right:2px solid var(--border);
+  padding:14px 12px;display:flex;flex-direction:column;gap:14px;
+  overflow:hidden;
+}
+.stats-title{
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  color:var(--gold);letter-spacing:2px;text-align:center;
+  padding-bottom:10px;border-bottom:1px solid var(--border);
+}
+.avatar-box{
+  display:flex;justify-content:center;
+}
+.avatar{
+  width:48px;height:48px;border:2px solid var(--gold);
+  background:linear-gradient(135deg,#1a2a4a,#0d1830);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;position:relative;
+}
+.avatar::after{content:'';position:absolute;inset:-4px;border:1px solid rgba(245,166,35,0.2);}
+.stat-row{display:flex;flex-direction:column;gap:5px;}
+.stat-label{font-family:'Press Start 2P',monospace;font-size:6px;color:rgba(245,166,35,0.6);letter-spacing:1px;}
+.stat-value{font-size:17px;color:#d4e8ff;letter-spacing:1px;}
+.bar-wrap{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);height:10px;position:relative;}
+.bar-fill{height:100%;transition:width .4s;}
+.bar-hp{background:linear-gradient(90deg,#8b0000,var(--hp));}
+.bar-xp{background:linear-gradient(90deg,#0d3366,var(--xp));}
+.bar-label{position:absolute;right:4px;top:-1px;font-size:12px;color:rgba(255,255,255,0.6);line-height:12px;}
+.coord-row{display:flex;gap:8px;}
+.coord-item{flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:4px 6px;text-align:center;}
+.coord-item span:first-child{font-family:'Press Start 2P',monospace;font-size:5px;color:rgba(245,166,35,0.55);display:block;margin-bottom:2px;}
+.coord-item span:last-child{font-size:16px;color:var(--gold);}
+.legend{margin-top:auto;border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:5px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:13px;color:rgba(200,220,255,0.5);}
+.leg-dot{width:10px;height:10px;flex-shrink:0;}
+.mini-log{flex:1;overflow-y:auto;font-size:13px;color:rgba(180,200,240,0.6);line-height:1.5;padding-top:6px;}
+.mini-log::-webkit-scrollbar{width:3px;}
+.mini-log::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* ═══ CENTER — CANVAS ═══ */
+.canvas-wrap{
+  position:relative;overflow:hidden;background:#04060e;
+  display:flex;align-items:center;justify-content:center;
+}
+#gameCanvas{image-rendering:pixelated;cursor:crosshair;display:block;}
+.canvas-overlay{
+  position:absolute;top:10px;left:10px;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  color:rgba(245,166,35,0.5);letter-spacing:1px;pointer-events:none;
+}
+.fps-counter{position:absolute;top:10px;right:10px;font-size:12px;color:rgba(100,200,100,0.5);pointer-events:none;}
+
+/* ═══ RIGHT PANEL — CHAT ═══ */
+.chat-panel{
+  background:var(--panel);border-left:2px solid var(--border);
+  display:flex;flex-direction:column;padding:12px;gap:10px;
+}
+.chat-title{
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  color:var(--gold);letter-spacing:2px;text-align:center;
+  padding-bottom:10px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.chat-messages{
+  flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;
+  padding-right:4px;
+}
+.chat-messages::-webkit-scrollbar{width:3px;}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border);}
+.chat-msg{
+  font-size:15px;line-height:1.4;word-break:break-word;
+  padding:3px 6px;border-left:2px solid transparent;
+  transition:background .15s;
+}
+.chat-msg:hover{background:rgba(245,166,35,0.04);}
+.chat-msg .msg-name{font-family:'Press Start 2P',monospace;font-size:6px;letter-spacing:.5px;}
+.chat-msg .msg-text{color:rgba(210,225,255,0.8);}
+.chat-msg.system .msg-text{color:rgba(105,240,174,0.65);font-style:italic;}
+.chat-msg.self{border-left-color:var(--gold);}
+.chat-input-row{display:flex;gap:6px;flex-shrink:0;}
+.chat-input{
+  flex:1;background:var(--input-bg);border:1.5px solid rgba(42,111,219,0.3);
+  padding:8px 10px;font-family:'VT323',monospace;font-size:18px;
+  color:#d4e8ff;outline:none;caret-color:var(--gold);
+}
+.chat-input:focus{border-color:#2a6fdb;}
+.chat-send{
+  background:linear-gradient(180deg,var(--gold-lt),var(--gold));
+  border:1.5px solid var(--gold);color:#120800;
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  padding:0 10px;cursor:pointer;letter-spacing:1px;
+  transition:all .15s;white-space:nowrap;
+}
+.chat-send:hover{box-shadow:0 0 14px rgba(245,166,35,0.5);transform:translateY(-1px);}
+.chat-send:active{transform:translateY(1px);}
+.online-bar{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  font-size:13px;color:rgba(105,240,174,0.5);
+  border-top:1px solid var(--border);padding-top:8px;
+}
+.online-dot{width:6px;height:6px;background:#69f0ae;animation:od 2s infinite;}
+@keyframes od{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ═══ TOOLTIP ═══ */
+#tooltip{
+  position:fixed;display:none;pointer-events:none;z-index:100;
+  background:rgba(5,10,25,0.92);border:1px solid var(--border);
+  padding:5px 10px;font-size:14px;color:var(--gold);letter-spacing:1px;
+}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+
+  <!-- LEFT: STATS -->
+  <div class="stats-panel">
+    <div class="stats-title">⚙ СТАТЫ</div>
+    <div class="avatar-box">
+      <div class="avatar">🧑</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">ИГРОК</div>
+      <div class="stat-value" id="stat-name">Странник</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">УРОВЕНЬ</div>
+      <div class="stat-value" id="stat-level">1</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">ЗДОРОВЬЕ</div>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-hp" id="bar-hp" style="width:100%"></div>
+        <span class="bar-label" id="bar-hp-txt">100/100</span>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">ОПЫТ</div>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-xp" id="bar-xp" style="width:0%"></div>
+        <span class="bar-label" id="bar-xp-txt">0/100</span>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-label">КООРДИНАТЫ</div>
+      <div class="coord-row">
+        <div class="coord-item"><span>X</span><span id="coord-x">25</span></div>
+        <div class="coord-item"><span>Y</span><span id="coord-y">25</span></div>
+      </div>
+    </div>
+    <div class="stat-row" style="flex:1">
+      <div class="stat-label">ЖУРНАЛ</div>
+      <div class="mini-log" id="mini-log"></div>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#3a7d44"></div>Трава</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#2a3040"></div>Дорога</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#2a4a6a"></div>Здание</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#1a3a18"></div>Дерево</div>
+    </div>
+  </div>
+
+  <!-- CENTER: CANVAS -->
+  <div class="canvas-wrap">
+    <canvas id="gameCanvas" width="1024" height="768"></canvas>
+    <div class="canvas-overlay" id="canvas-overlay">ГОРОДОК v0.1</div>
+    <div class="fps-counter" id="fps-counter">60 FPS</div>
+  </div>
+
+  <!-- RIGHT: CHAT -->
+  <div class="chat-panel">
+    <div class="chat-title">💬 ЧАТ</div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" type="text" placeholder="Написать..." maxlength="80"
+        onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" onclick="sendChat()">▶ ОТП.</button>
+    </div>
+    <div class="online-bar">
+      <div class="online-dot"></div>
+      <span id="online-count">6 игроков онлайн</span>
+    </div>
+  </div>
+
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════ */
+const TW=64, TH=32;       // tile size in ISO
+const MAP_W=50, MAP_H=50; // map dimensions
+const MOVE_SPEED=2.2;     // pixels per frame
+
+/* ═══════════════════════════════════════════════════
+   TILE TYPES
+═══════════════════════════════════════════════════ */
+const T={GRASS:0,ROAD:1,BUILDING:2,TREE:3,HOSPITAL:4,MALL:5,PRISON:6,WATER:7};
+const WALKABLE=new Set([T.GRASS,T.ROAD]);
+
+/* ═══════════════════════════════════════════════════
+   MAP GENERATION
+═══════════════════════════════════════════════════ */
+const map=[];
+for(let y=0;y<MAP_H;y++){map.push(new Array(MAP_W).fill(T.GRASS));}
+
+function setRect(x0,y0,w,h,type){
+  for(let y=y0;y<y0+h&&y<MAP_H;y++)
+    for(let x=x0;x<x0+w&&x<MAP_W;x++) map[y][x]=type;
+}
+
+// Roads
+for(let x=0;x<MAP_W;x++){map[10][x]=T.ROAD;map[25][x]=T.ROAD;map[38][x]=T.ROAD;}
+for(let y=0;y<MAP_H;y++){map[y][10]=T.ROAD;map[y][25]=T.ROAD;map[y][38]=T.ROAD;}
+
+// Buildings — residential blocks
+setRect(2,2,5,5,T.BUILDING);setRect(12,2,5,6,T.BUILDING);setRect(27,2,4,5,T.BUILDING);
+setRect(2,12,4,6,T.BUILDING);setRect(12,12,5,5,T.BUILDING);setRect(27,12,6,5,T.BUILDING);
+setRect(40,2,6,6,T.BUILDING);setRect(40,12,5,5,T.BUILDING);
+setRect(2,27,5,6,T.BUILDING);setRect(12,27,4,5,T.BUILDING);
+setRect(40,27,6,5,T.BUILDING);setRect(27,27,5,5,T.BUILDING);
+setRect(2,40,5,6,T.BUILDING);setRect(12,40,6,5,T.BUILDING);
+setRect(27,40,5,6,T.BUILDING);setRect(40,40,6,6,T.BUILDING);
+
+// Hospital (центр-лево от центра)
+setRect(13,13,5,5,T.HOSPITAL);
+
+// Mall (торговый центр — широкий)
+setRect(27,13,7,6,T.MALL);
+
+// Prison (угол карты)
+setRect(40,40,7,7,T.PRISON);
+
+// Trees — forest border and scattered
+for(let i=0;i<MAP_W;i++){
+  if(map[0][i]===T.GRASS)map[0][i]=T.TREE;
+  if(map[1][i]===T.GRASS)map[1][i]=T.TREE;
+  if(map[MAP_H-1][i]===T.GRASS)map[MAP_H-1][i]=T.TREE;
+  if(map[MAP_H-2][i]===T.GRASS)map[MAP_H-2][i]=T.TREE;
+}
+for(let j=0;j<MAP_H;j++){
+  if(map[j][0]===T.GRASS)map[j][0]=T.TREE;
+  if(map[j][1]===T.GRASS)map[j][1]=T.TREE;
+  if(map[j][MAP_W-1]===T.GRASS)map[j][MAP_W-1]=T.TREE;
+  if(map[j][MAP_W-2]===T.GRASS)map[j][MAP_W-2]=T.TREE;
+}
+// Scattered trees
+const treePts=[[5,5],[6,6],[5,7],[7,5],[18,5],[19,6],[18,7],[5,18],[6,19],[7,18],
+  [33,5],[34,6],[33,7],[44,18],[45,19],[5,33],[6,34],[5,35],[33,33],[34,34],
+  [20,20],[21,21],[20,22],[8,42],[9,43],[8,44],[42,8],[43,9],[42,10]];
+treePts.forEach(([x,y])=>{if(x<MAP_W&&y<MAP_H&&map[y][x]===T.GRASS)map[y][x]=T.TREE;});
+
+/* ═══════════════════════════════════════════════════
+   ISO UTILS
+═══════════════════════════════════════════════════ */
+function isoProject(tx,ty){
+  return{
+    sx:(tx-ty)*(TW/2),
+    sy:(tx+ty)*(TH/2)
+  };
+}
+function screenToTile(sx,sy,camX,camY,cw,ch){
+  const rx=sx-(cw/2-camX), ry=sy-(ch/2-camY);
+  const tx=(rx/(TW/2)+ry/(TH/2))/2;
+  const ty=(ry/(TH/2)-rx/(TW/2))/2;
+  return{tx:Math.floor(tx),ty:Math.floor(ty)};
+}
+
+/* ═══════════════════════════════════════════════════
+   PALETTE
+═══════════════════════════════════════════════════ */
+const COL={
+  grass:['#1e3a14','#233f17','#28451a','#2c4a1c'],
+  road:['#1e2430','#232b38','#28303f'],
+  building:['#1c2c42','#243450','#1828388','#0e1c2e','#2a3c58'],
+  hosp:['#d0e8f0','#b8d8e8','#c8e0f0','#f0f8ff'],
+  hospRoof:['#1a3a5a','#224266'],
+  mall:['#1e1830','#2a2245','#362c58','#261e40'],
+  mallRoof:['#16122a','#1e183a'],
+  prison:['#181814','#1e1e18','#14140e','#282820'],
+  prisonRoof:['#101008','#181810'],
+  tree:['#0a1a08','#0e2209','#112808','#142e0b','#0c1f0a'],
+  treeTop:['#173314','#1b3c17','#1f4519','#234e1c'],
+  trunk:['#2a1a08','#3a240e'],
+  water:['#0d2240','#0e2848','#102e50'],
+  shadow:'rgba(0,0,0,0.35)',
+  highlight:'rgba(255,255,255,0.06)',
+  hover:'rgba(255,220,80,0.25)',
+  hoverBorder:'rgba(255,220,80,0.7)',
+  blocked:'rgba(255,60,60,0.2)',
+  playerPath:'rgba(245,166,35,0.3)',
+};
+
+/* ═══════════════════════════════════════════════════
+   CANVAS SETUP
+═══════════════════════════════════════════════════ */
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+const CW=canvas.width, CH=canvas.height;
+
+/* ═══════════════════════════════════════════════════
+   PLAYER
+═══════════════════════════════════════════════════ */
+const player={
+  name:'Странник',
+  tx:25,ty:25,      // tile position (integer)
+  px:0,py:0,        // pixel offset (ISO world coords, relative to tile center)
+  targetTx:25,targetTy:25,
+  moving:false,
+  path:[],          // array of {tx,ty} waypoints
+  hp:100,maxHp:100,
+  xp:0,maxXp:100,
+  level:1,
+  color:'#f5a623',
+  shadowColor:'rgba(245,130,0,0.5)',
+  moveTimer:0,
+};
+
+// Init pixel position
+(function(){const p=isoProject(player.tx,player.ty);player.px=p.sx;player.py=p.sy;})();
+
+/* camera in iso world coords */
+let camX=0,camY=0;
+
+/* ═══════════════════════════════════════════════════
+   BOTS
+═══════════════════════════════════════════════════ */
+const BOT_COLORS=['#3a8fff','#e83060','#20c060','#c060e0','#60d0e0'];
+const BOT_NAMES=['Алёша','Маша','Денис','Света','Коля'];
+const bots=BOT_COLORS.map((col,i)=>{
+  let tx,ty;
+  do{tx=5+Math.floor(Math.random()*40);ty=5+Math.floor(Math.random()*40);}
+  while(!WALKABLE.has(map[ty]?.[tx]));
+  const p=isoProject(tx,ty);
+  return{name:BOT_NAMES[i],tx,ty,px:p.sx,py:p.sy,targetTx:tx,targetTy:ty,moving:false,path:[],color:col,shadowColor:col+'80',moveTimer:0,};
+});
+
+/* ═══════════════════════════════════════════════════
+   SIMPLE PATHFINDING (BFS)
+═══════════════════════════════════════════════════ */
+function bfs(startX,startY,endX,endY){
+  if(startX===endX&&startY===endY)return[];
+  if(!WALKABLE.has(map[endY]?.[endX]))return null;
+  const visited=new Set();
+  const queue=[{x:startX,y:startY,path:[]}];
+  visited.add(startX+','+startY);
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+  while(queue.length){
+    const{x,y,path}=queue.shift();
+    for(const[dx,dy]of dirs){
+      const nx=x+dx,ny=y+dy;
+      if(nx<0||ny<0||nx>=MAP_W||ny>=MAP_H)continue;
+      if(visited.has(nx+','+ny))continue;
+      if(!WALKABLE.has(map[ny][nx]))continue;
+      const newPath=[...path,{tx:nx,ty:ny}];
+      if(nx===endX&&ny===endY)return newPath;
+      visited.add(nx+','+ny);
+      queue.push({x:nx,y:ny,path:newPath});
+    }
+  }
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════
+   HOVER / CLICK STATE
+═══════════════════════════════════════════════════ */
+let hoverTx=-1,hoverTy=-1;
+let clickFx=null; // {x,y,r,a} click effect
+
+/* ═══════════════════════════════════════════════════
+   DRAW TILE FACE
+═══════════════════════════════════════════════════ */
+function tileVerts(sx,sy){
+  return[
+    sx,        sy,
+    sx+TW/2,  sy+TH/2,
+    sx,        sy+TH,
+    sx-TW/2,  sy+TH/2,
+  ];
+}
+function fillTile(sx,sy,col){
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.moveTo(sx,sy);
+  ctx.lineTo(sx+TW/2,sy+TH/2);
+  ctx.lineTo(sx,sy+TH);
+  ctx.lineTo(sx-TW/2,sy+TH/2);
+  ctx.closePath();ctx.fill();
+}
+function strokeTile(sx,sy,col,lw=1){
+  ctx.strokeStyle=col;ctx.lineWidth=lw;
+  ctx.beginPath();
+  ctx.moveTo(sx,sy);
+  ctx.lineTo(sx+TW/2,sy+TH/2);
+  ctx.lineTo(sx,sy+TH);
+  ctx.lineTo(sx-TW/2,sy+TH/2);
+  ctx.closePath();ctx.stroke();
+}
+
+/* ═══════════════════════════════════════════════════
+   DRAW TILE CONTENT
+═══════════════════════════════════════════════════ */
+function drawTile(tx,ty,ox,oy){
+  const t=map[ty][tx];
+  const ci=(tx*3+ty*7)%4;
+  const isHover=(tx===hoverTx&&ty===hoverTy);
+  const sx=ox,sy=oy;
+
+  // Ground face
+  if(t===T.GRASS){fillTile(sx,sy,COL.grass[ci%COL.grass.length]);}
+  else if(t===T.ROAD){fillTile(sx,sy,COL.road[ci%COL.road.length]);}
+  else if(t===T.WATER){fillTile(sx,sy,COL.water[ci%COL.water.length]);}
+  else{fillTile(sx,sy,COL.grass[0]);} // base ground under buildings/trees
+
+  // Grid edge (subtle)
+  strokeTile(sx,sy,'rgba(0,0,0,0.18)',0.5);
+
+  // ROAD markings
+  if(t===T.ROAD){
+    // center line dashes
+    ctx.save();ctx.globalAlpha=0.2;ctx.strokeStyle='#c8d0e0';ctx.lineWidth=1;
+    ctx.setLineDash([4,6]);
+    ctx.beginPath();ctx.moveTo(sx-TW/4,sy+TH*0.75);ctx.lineTo(sx+TW/4,sy+TH*0.25);ctx.stroke();
+    ctx.setLineDash([]);ctx.restore();
+    if(isHover&&WALKABLE.has(t)){fillTile(sx,sy,COL.hover);}
+    return;
+  }
+  if(t===T.GRASS){if(isHover){fillTile(sx,sy,COL.hover);}return;}
+
+  // ── TREE ──
+  if(t===T.TREE){
+    const ci2=ci%COL.tree.length;
+    fillTile(sx,sy,COL.tree[ci2]);
+    // trunk
+    const trunkH=18;
+    const trunkW=5;
+    ctx.fillStyle=COL.trunk[ci%2];
+    ctx.fillRect(sx-trunkW/2,sy+TH/2-trunkH*.5,trunkW,trunkH);
+    // canopy layers
+    const topCols=COL.treeTop;
+    const layers=3;
+    for(let l=0;l<layers;l++){
+      const ly=sy+TH/2-trunkH*.4-(l*10);
+      const lw=(TW*.55)*(1-l*.18);
+      const lh=TH*.5+l*2;
+      ctx.fillStyle=topCols[(ci2+l)%topCols.length];
+      ctx.beginPath();
+      ctx.moveTo(sx,ly-lh*.6);
+      ctx.lineTo(sx+lw/2,ly);
+      ctx.lineTo(sx-lw/2,ly);
+      ctx.closePath();ctx.fill();
+    }
+    // highlight top
+    ctx.fillStyle='rgba(255,255,255,0.07)';
+    ctx.beginPath();ctx.moveTo(sx,sy+TH/2-trunkH*.4-26);ctx.lineTo(sx+8,sy+TH/2-trunkH*.4-16);ctx.lineTo(sx-8,sy+TH/2-trunkH*.4-16);ctx.closePath();ctx.fill();
+    if(isHover){strokeTile(sx,sy,COL.hoverBorder,1.5);}
+    return;
+  }
+
+  // ── BUILDING (residential) ──
+  if(t===T.BUILDING){
+    const bc=COL.building;
+    const wallH=32+((tx*5+ty*3)%3)*8;
+    // left face
+    ctx.fillStyle=bc[1];
+    ctx.beginPath();ctx.moveTo(sx-TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx-TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    // right face
+    ctx.fillStyle=bc[0];
+    ctx.beginPath();ctx.moveTo(sx+TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx+TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    // top face
+    fillTile(sx,sy,bc[4]);
+    // windows
+    for(let wy=0;wy<Math.floor(wallH/10);wy++){
+      for(let wxi=0;wxi<2;wxi++){
+        const onl=(tx*13+ty*7+wy*3+wxi*11)%5!==0;
+        ctx.fillStyle=onl?'rgba(255,220,100,0.7)':'rgba(10,15,30,0.8)';
+        const wx2=sx+(wxi===0?-TW*.25:TW*.1);
+        const wy2=sy+TH+wallH-12-wy*10;
+        ctx.fillRect(wx2-3,wy2,6,6);
+      }
+    }
+    // roof highlight
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+TW*.2,sy+TH*.3);ctx.lineTo(sx,sy+TH*.6);ctx.lineTo(sx-TW*.2,sy+TH*.3);ctx.closePath();ctx.fill();
+    if(isHover){strokeTile(sx,sy,COL.blocked,1.5);}
+    return;
+  }
+
+  // ── HOSPITAL ──
+  if(t===T.HOSPITAL){
+    const wallH=44;
+    ctx.fillStyle=COL.hosp[1];
+    ctx.beginPath();ctx.moveTo(sx-TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx-TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    ctx.fillStyle=COL.hosp[0];
+    ctx.beginPath();ctx.moveTo(sx+TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx+TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    fillTile(sx,sy,COL.hosp[3]);
+    // red cross on face
+    ctx.fillStyle='rgba(220,30,30,0.9)';
+    ctx.fillRect(sx-4,sy+TH+wallH-30,8,14);
+    ctx.fillRect(sx-9,sy+TH+wallH-25,18,4);
+    // windows white/blue
+    for(let wy=0;wy<3;wy++){
+      ctx.fillStyle='rgba(160,220,255,0.6)';
+      ctx.fillRect(sx-TW*.22-3,sy+TH+wallH-12-wy*12,6,6);
+      ctx.fillRect(sx+TW*.08-3,sy+TH+wallH-12-wy*12,6,6);
+    }
+    if(isHover){strokeTile(sx,sy,COL.blocked,1.5);}
+    return;
+  }
+
+  // ── MALL ──
+  if(t===T.MALL){
+    const wallH=36;
+    ctx.fillStyle=COL.mall[2];
+    ctx.beginPath();ctx.moveTo(sx-TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx-TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    ctx.fillStyle=COL.mall[1];
+    ctx.beginPath();ctx.moveTo(sx+TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx+TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    fillTile(sx,sy,COL.mall[3]);
+    // glass strips
+    for(let s=0;s<3;s++){
+      ctx.fillStyle='rgba(100,180,255,0.15)';
+      ctx.fillRect(sx-TW*.3+s*8,sy+TH+4,5,wallH-6);
+    }
+    // sign
+    ctx.fillStyle='rgba(255,200,50,0.85)';ctx.font='bold 7px monospace';ctx.fillText('ТЦ',sx-6,sy+TH+12);
+    if(isHover){strokeTile(sx,sy,COL.blocked,1.5);}
+    return;
+  }
+
+  // ── PRISON ──
+  if(t===T.PRISON){
+    const wallH=40;
+    ctx.fillStyle=COL.prison[2];
+    ctx.beginPath();ctx.moveTo(sx-TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx-TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    ctx.fillStyle=COL.prison[0];
+    ctx.beginPath();ctx.moveTo(sx+TW/2,sy+TH/2);ctx.lineTo(sx,sy+TH);ctx.lineTo(sx,sy+TH+wallH);ctx.lineTo(sx+TW/2,sy+TH/2+wallH);ctx.closePath();ctx.fill();
+    fillTile(sx,sy,COL.prison[3]);
+    // barred windows
+    for(let b2=0;b2<2;b2++){
+      ctx.fillStyle='rgba(40,40,30,0.9)';
+      ctx.fillRect(sx-TW*.2+b2*12,sy+TH+wallH-20,10,8);
+      ctx.strokeStyle='rgba(60,60,40,0.8)';ctx.lineWidth=1;
+      for(let bar=0;bar<4;bar++)ctx.strokeRect(sx-TW*.2+b2*12+bar*2.5,sy+TH+wallH-20,1,8);
+    }
+    ctx.fillStyle='rgba(140,130,80,0.7)';ctx.font='bold 6px monospace';ctx.fillText('ТЮРЬМА',sx-14,sy+TH+10);
+    if(isHover){strokeTile(sx,sy,COL.blocked,1.5);}
+    return;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   DRAW CHARACTER
+═══════════════════════════════════════════════════ */
+function drawCharacter(worldX,worldY,color,shadowColor,name,isPlayer){
+  const sx=CW/2+(worldX-camX);
+  const sy=CH/2+(worldY-camY)-8;
+
+  // shadow
+  ctx.globalAlpha=0.4;
+  ctx.fillStyle=shadowColor;
+  ctx.beginPath();ctx.ellipse(sx,sy+28,10,4,0,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+
+  // legs (animated by using time)
+  const legSwing=isPlayer&&player.moving? Math.sin(Date.now()*.008)*4 : 0;
+  ctx.fillStyle=color==='#f5a623'?'#2a3a5a':'#1a1a2a';
+  ctx.fillRect(sx-4,sy+14+legSwing,4,8);
+  ctx.fillRect(sx+1,sy+14-legSwing,4,8);
+  ctx.fillStyle=color==='#f5a623'?'#1a1a2a':'#0a0a14';
+  ctx.fillRect(sx-4,sy+20+legSwing,4,3);
+  ctx.fillRect(sx+1,sy+20-legSwing,4,3);
+
+  // body
+  ctx.fillStyle=color;
+  ctx.fillRect(sx-5,sy+6,10,10);
+  // jacket shade
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  ctx.fillRect(sx-5,sy+12,10,4);
+  // arms (swing)
+  ctx.fillStyle=color;
+  ctx.fillRect(sx-8,sy+8-legSwing*.5,3,7);
+  ctx.fillRect(sx+5,sy+8+legSwing*.5,3,7);
+
+  // head
+  ctx.fillStyle='#e8c090';
+  ctx.fillRect(sx-4,sy,8,8);
+  // eyes
+  ctx.fillStyle='#1a0a00';
+  ctx.fillRect(sx-2,sy+2,2,2);
+  ctx.fillRect(sx+2,sy+2,2,2);
+  // hair
+  ctx.fillStyle=isPlayer?'#3a2008':'#0a0a20';
+  ctx.fillRect(sx-4,sy,8,3);
+
+  // player indicator
+  if(isPlayer){
+    ctx.strokeStyle='rgba(245,166,35,0.7)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(sx,sy-6,5,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='rgba(245,166,35,0.8)';
+    ctx.beginPath();ctx.arc(sx,sy-6,2,0,Math.PI*2);ctx.fill();
+  }
+
+  // name tag
+  if(name){
+    ctx.font='10px VT323, monospace';
+    ctx.textAlign='center';
+    const nw=ctx.measureText(name).width;
+    ctx.fillStyle='rgba(5,10,25,0.7)';
+    ctx.fillRect(sx-nw/2-3,sy-22,nw+6,13);
+    ctx.fillStyle=isPlayer?'#f5a623':'rgba(200,220,255,0.8)';
+    ctx.fillText(name,sx,sy-11);
+    ctx.textAlign='left';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   DRAW PATH INDICATOR
+═══════════════════════════════════════════════════ */
+function drawPath(){
+  if(!player.path||player.path.length===0)return;
+  player.path.forEach(({tx,ty},i)=>{
+    const{sx,sy}=isoToScreen(tx,ty);
+    ctx.globalAlpha=Math.max(0.1,0.5-i*.04);
+    fillTile(sx,sy,COL.playerPath);
+    ctx.globalAlpha=1;
+  });
+  // destination marker
+  const last=player.path[player.path.length-1];
+  const{sx,sy}=isoToScreen(last.tx,last.ty);
+  ctx.globalAlpha=0.7;
+  strokeTile(sx,sy,'rgba(245,166,35,0.8)',2);
+  ctx.globalAlpha=1;
+}
+
+/* ═══════════════════════════════════════════════════
+   ISO → SCREEN (camera-relative)
+═══════════════════════════════════════════════════ */
+function isoToScreen(tx,ty){
+  const p=isoProject(tx,ty);
+  return{sx:CW/2+(p.sx-camX),sy:CH/2+(p.sy-camY)};
+}
+
+/* ═══════════════════════════════════════════════════
+   MOVE ENTITY TOWARDS TARGET
+═══════════════════════════════════════════════════ */
+function moveEntity(e){
+  if(!e.moving||e.path.length===0){e.moving=false;return;}
+  const next=e.path[0];
+  const target=isoProject(next.tx,next.ty);
+  const dx=target.sx-e.px, dy=target.sy-e.py;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist<MOVE_SPEED+0.5){
+    e.px=target.sx;e.py=target.sy;
+    e.tx=next.tx;e.ty=next.ty;
+    e.path.shift();
+    if(e.path.length===0){e.moving=false;e.targetTx=e.tx;e.targetTy=e.ty;}
+  } else {
+    const spd=MOVE_SPEED;
+    e.px+=dx/dist*spd;
+    e.py+=dy/dist*spd;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   BOT AI
+═══════════════════════════════════════════════════ */
+function botTick(){
+  bots.forEach(bot=>{
+    if(bot.moving)return;
+    const dx=Math.floor(Math.random()*5)-2;
+    const dy=Math.floor(Math.random()*5)-2;
+    const nx=Math.min(MAP_W-1,Math.max(0,bot.tx+dx));
+    const ny=Math.min(MAP_H-1,Math.max(0,bot.ty+dy));
+    if(WALKABLE.has(map[ny][nx])){
+      const p=bfs(bot.tx,bot.ty,nx,ny);
+      if(p&&p.length>0){bot.path=p;bot.moving=true;}
+    }
+  });
+}
+setInterval(botTick,3500);
+
+/* ═══════════════════════════════════════════════════
+   CANVAS INTERACTION
+═══════════════════════════════════════════════════ */
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const{tx,ty}=screenToTile(mx,my,camX,camY,CW,CH);
+  hoverTx=tx;hoverTy=ty;
+  // tooltip
+  const tip=document.getElementById('tooltip');
+  if(tx>=0&&ty>=0&&tx<MAP_W&&ty<MAP_H){
+    const t=map[ty][tx];
+    const names={[T.GRASS]:'Трава',[T.ROAD]:'Дорога',[T.BUILDING]:'Жилой дом',[T.TREE]:'Дерево',[T.HOSPITAL]:'Больница',[T.MALL]:'Торговый центр',[T.PRISON]:'Тюрьма'};
+    tip.textContent=`${names[t]||'?'} [${tx},${ty}]`;
+    tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';
+  } else{tip.style.display='none';}
+});
+canvas.addEventListener('mouseleave',()=>{document.getElementById('tooltip').style.display='none';});
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  const{tx,ty}=screenToTile(mx,my,camX,camY,CW,CH);
+  if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H)return;
+  const t=map[ty][tx];
+  if(!WALKABLE.has(t)){
+    const names={[T.BUILDING]:'жилой дом',[T.TREE]:'дерево',[T.HOSPITAL]:'больницу',[T.MALL]:'ТЦ',[T.PRISON]:'тюрьму'};
+    addSystemMsg(`Туда нельзя — ${names[t]||'препятствие'} [${tx},${ty}]`);
+    return;
+  }
+  const path=bfs(player.tx,player.ty,tx,ty);
+  if(!path){addSystemMsg(`Путь к [${tx},${ty}] заблокирован`);return;}
+  if(path.length===0)return;
+  player.path=path;player.moving=true;
+  player.targetTx=tx;player.targetTy=ty;
+  // click effect
+  const ip=isoProject(tx,ty);
+  clickFx={wx:ip.sx,wy:ip.sy,r:8,a:1};
+  addLog(`Иду к [${tx},${ty}]`);
+  gainXp(2);
+});
+
+/* ═══════════════════════════════════════════════════
+   RENDER LOOP
+═══════════════════════════════════════════════════ */
+let lastTime=0,fps=60,fpsTimer=0,fpsCount=0;
+
+function render(now){
+  const dt=now-lastTime;lastTime=now;
+  fpsTimer+=dt;fpsCount++;
+  if(fpsTimer>=500){fps=Math.round(fpsCount/(fpsTimer/1000));fpsTimer=0;fpsCount=0;document.getElementById('fps-counter').textContent=fps+' FPS';}
+
+  // Move player
+  moveEntity(player);
+  bots.forEach(b=>moveEntity(b));
+
+  // Camera follows player
+  camX=player.px; camY=player.py;
+
+  // Update UI
+  document.getElementById('coord-x').textContent=player.tx;
+  document.getElementById('coord-y').textContent=player.ty;
+
+  // Clear
+  ctx.fillStyle='#04060e';
+  ctx.fillRect(0,0,CW,CH);
+
+  // Determine visible tiles (optimize — only draw what's on screen)
+  const margin=3;
+  const tiles=[];
+  for(let ty=0;ty<MAP_H;ty++){
+    for(let tx=0;tx<MAP_W;tx++){
+      const{sx,sy}=isoToScreen(tx,ty);
+      if(sx<-TW-4||sx>CW+TW+4||sy<-TH*4||sy>CH+TH*4)continue;
+      tiles.push({tx,ty,sx,sy,depth:tx+ty});
+    }
+  }
+  // Sort by depth (iso painter's algo)
+  tiles.sort((a,b)=>a.depth-b.depth);
+
+  // Draw path first
+  drawPath();
+
+  // Draw tiles
+  tiles.forEach(({tx,ty,sx,sy})=>drawTile(tx,ty,sx,sy));
+
+  // Click fx
+  if(clickFx){
+    const csx=CW/2+(clickFx.wx-camX), csy=CH/2+(clickFx.wy-camY);
+    ctx.globalAlpha=clickFx.a;
+    ctx.strokeStyle='rgba(245,166,35,'+clickFx.a+')';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(csx,csy+TH/2,clickFx.r,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=1;
+    clickFx.r+=3;clickFx.a-=.06;
+    if(clickFx.a<=0)clickFx=null;
+  }
+
+  // Draw bots (behind player if deeper)
+  const allChars=[...bots.map(b=>({...b,isPlayer:false,zz:b.tx+b.ty})),{...player,isPlayer:true,zz:player.tx+player.ty}];
+  allChars.sort((a,b)=>a.zz-b.zz);
+  allChars.forEach(ch=>{
+    drawCharacter(ch.px,ch.py,ch.color,ch.shadowColor,ch.name,ch.isPlayer);
+  });
+
+  // Mini-map (bottom right of canvas)
+  drawMinimap();
+
+  requestAnimationFrame(render);
+}
+
+/* ═══════════════════════════════════════════════════
+   MINI MAP
+═══════════════════════════════════════════════════ */
+function drawMinimap(){
+  const mw=100,mh=100,mx=CW-mw-10,my=CH-mh-10;
+  const sc=mw/MAP_W;
+  // bg
+  ctx.fillStyle='rgba(5,10,22,0.85)';ctx.fillRect(mx,my,mw,mh);
+  ctx.strokeStyle='rgba(245,166,35,0.4)';ctx.lineWidth=1;ctx.strokeRect(mx,my,mw,mh);
+  // tiles
+  for(let ty=0;ty<MAP_H;ty++){
+    for(let tx=0;tx<MAP_W;tx++){
+      const t=map[ty][tx];
+      const cols2={[T.GRASS]:'#1e3a14',[T.ROAD]:'#2a3040',[T.BUILDING]:'#2a4a6a',[T.TREE]:'#0e2209',[T.HOSPITAL]:'#c8e8f0',[T.MALL]:'#3a2a60',[T.PRISON]:'#1e1e14'};
+      ctx.fillStyle=cols2[t]||'#1e3a14';
+      ctx.fillRect(mx+tx*sc,my+ty*sc,Math.ceil(sc),Math.ceil(sc));
+    }
+  }
+  // player dot
+  ctx.fillStyle='#f5a623';
+  ctx.fillRect(mx+player.tx*sc-2,my+player.ty*sc-2,4,4);
+  // bots
+  bots.forEach(b=>{ctx.fillStyle=b.color;ctx.fillRect(mx+b.tx*sc-1,my+b.ty*sc-1,3,3);});
+  // viewport rect
+  const vx=player.tx-(CW/2/TW),vy=player.ty-(CH/2/TH);
+  ctx.strokeStyle='rgba(245,166,35,0.3)';ctx.lineWidth=0.5;
+  ctx.strokeRect(mx+vx*sc,my+vy*sc,(CW/TW)*sc,(CH/TH)*sc);
+  // label
+  ctx.fillStyle='rgba(245,166,35,0.5)';ctx.font='8px VT323,monospace';ctx.fillText('КАРТА',mx+3,my+10);
+}
+
+/* ═══════════════════════════════════════════════════
+   CHAT
+═══════════════════════════════════════════════════ */
+const chatEl=document.getElementById('chat-messages');
+const BOT_CHAT_NAMES=['Алёша','Маша','Денис','Света','Коля','Система'];
+const BOT_CHAT_MSGS=[
+  'Кто-нибудь знает, где тут магазин?','Привет всем!','Идёт к торговому центру','Осторожно, рядом с тюрьмой!',
+  'Нужна помощь в больнице','Кто строит новый дом?','Хороший городок!','Есть кто новенький?',
+  'Проверьте лесную дорогу','Уровень повысился!','Собираюсь на рынок','Тут тихо сегодня...',
+  'Кто-нибудь видел Коленьку?','Патруль прошёл мимо','Вечер добрый!',
+];
+function addChatMsg(name,text,type=''){
+  const d=document.createElement('div');
+  d.className='chat-msg'+(type?' '+type:'');
+  const colors={Алёша:'#3a8fff',Маша:'#e83060',Денис:'#20c060',Света:'#c060e0',Коля:'#60d0e0',Система:'#69f0ae'};
+  const nc=colors[name]||'rgba(200,220,255,0.7)';
+  d.innerHTML=`<span class="msg-name" style="color:${nc}">${name}</span><br><span class="msg-text">${text}</span>`;
+  chatEl.appendChild(d);
+  while(chatEl.children.length>20)chatEl.removeChild(chatEl.firstChild);
+  chatEl.scrollTop=chatEl.scrollHeight;
+}
+function addSystemMsg(text){addChatMsg('Система',text,'system');}
+
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const txt=inp.value.trim();
+  if(!txt)return;
+  addChatMsg(player.name,txt,'self');
+  console.log(`Chat: [${player.name}] ${txt}`);
+  inp.value='';
+}
+
+// Bot chat interval
+setInterval(()=>{
+  const nm=BOT_CHAT_NAMES[Math.floor(Math.random()*BOT_CHAT_NAMES.length)];
+  const msg=BOT_CHAT_MSGS[Math.floor(Math.random()*BOT_CHAT_MSGS.length)];
+  addChatMsg(nm,msg);
+},5000);
+
+/* ═══════════════════════════════════════════════════
+   MINI LOG (left panel)
+═══════════════════════════════════════════════════ */
+const logEl=document.getElementById('mini-log');
+function addLog(text){
+  const d=document.createElement('div');
+  d.textContent='▸ '+text;
+  logEl.appendChild(d);
+  while(logEl.children.length>12)logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop=logEl.scrollHeight;
+}
+
+/* ═══════════════════════════════════════════════════
+   STATS
+═══════════════════════════════════════════════════ */
+function gainXp(amount){
+  player.xp=Math.min(player.maxXp,player.xp+amount);
+  if(player.xp>=player.maxXp){
+    player.xp=0;player.level++;
+    document.getElementById('stat-level').textContent=player.level;
+    addLog(`Уровень ${player.level}!`);
+    addSystemMsg(`Странник достиг уровня ${player.level}!`);
+    addChatMsg('Система',`🎉 ${player.name} достиг уровня ${player.level}!`,'system');
+  }
+  document.getElementById('bar-xp').style.width=(player.xp/player.maxXp*100)+'%';
+  document.getElementById('bar-xp-txt').textContent=`${player.xp}/${player.maxXp}`;
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+// Initial chat messages
+addSystemMsg('Добро пожаловать в Городок!');
+addChatMsg('Алёша','Привет, новичок!');
+addChatMsg('Маша','Добро пожаловать 😊');
+addLog('Игра запущена');
+addLog('Кликни по карте для движения');
+
+// Start render
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
