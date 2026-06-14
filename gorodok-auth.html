@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>Городок — Авторизация</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-dark:    #0a0e1a;
+    --bg-mid:     #0d1526;
+    --forest-dk:  #0b1a0d;
+    --forest-md:  #133518;
+    --forest-lt:  #1e5224;
+    --sky-top:    #06091a;
+    --sky-mid:    #0d1b3e;
+    --sky-hor:    #1a3a5c;
+    --gold:       #f5a623;
+    --gold-lt:    #ffd166;
+    --gold-dk:    #c47c10;
+    --orange:     #e8702a;
+    --blue-glow:  #2a6fdb;
+    --win-yellow: #ffe082;
+    --win-warm:   #ffb347;
+    --smoke:      rgba(180,190,200,0.35);
+    --form-bg:    rgba(8,14,32,0.82);
+    --border:     rgba(245,166,35,0.4);
+    --input-bg:   rgba(10,20,50,0.7);
+    --err:        #ff5252;
+    --ok:         #69f0ae;
+  }
+
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--bg-dark);
+  }
+
+  /* ═══════════════ CANVAS ═══════════════ */
+  #world {
+    position: fixed; inset: 0;
+    image-rendering: pixelated;
+  }
+
+  /* ═══════════════ OVERLAY ═══════════════ */
+  .overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(to bottom,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0.15) 60%,
+      rgba(0,0,0,0.55) 100%);
+    pointer-events: none;
+  }
+
+  /* ═══════════════ LAYOUT ═══════════════ */
+  .page {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+  }
+
+  /* ═══════════════ LOGO ═══════════════ */
+  .logo {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    filter: drop-shadow(0 0 18px rgba(245,166,35,0.6));
+    animation: logo-appear 1s ease both;
+  }
+  @keyframes logo-appear {
+    from { opacity:0; transform: translateY(-20px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+  .logo-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 32px;
+    color: var(--gold);
+    text-shadow:
+      0 0 12px var(--gold),
+      0 0 30px var(--orange),
+      2px 2px 0 #3a1a00;
+    letter-spacing: 6px;
+  }
+  .logo-sub {
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    color: rgba(245,166,35,0.6);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+  }
+
+  /* ═══════════════ FORM CARD ═══════════════ */
+  .card {
+    width: 420px;
+    background: var(--form-bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    backdrop-filter: blur(14px);
+    box-shadow:
+      0 0 0 1px rgba(245,166,35,0.1),
+      0 8px 40px rgba(0,0,0,0.7),
+      0 0 60px rgba(42,111,219,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    animation: card-appear 1s 0.2s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+  @keyframes card-appear {
+    from { opacity:0; transform: translateY(24px) scale(0.97); }
+    to   { opacity:1; transform: translateY(0) scale(1); }
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.7;
+  }
+
+  /* corner pixels */
+  .card::after {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(135deg, rgba(245,166,35,0.08) 0%, transparent 30%),
+      linear-gradient(225deg, rgba(245,166,35,0.04) 0%, transparent 20%);
+  }
+
+  /* ═══════════════ TABS ═══════════════ */
+  .tabs {
+    display: flex; border-bottom: 2px solid rgba(245,166,35,0.2);
+  }
+  .tab {
+    flex: 1; padding: 16px;
+    background: none; border: none; cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px; letter-spacing: 1px;
+    color: rgba(245,166,35,0.45);
+    transition: color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .tab:hover { color: var(--gold-lt); background: rgba(245,166,35,0.04); }
+  .tab.active {
+    color: var(--gold);
+    background: rgba(245,166,35,0.06);
+  }
+  .tab.active::after {
+    content: '';
+    position: absolute; bottom: -2px; left: 0; right: 0; height: 2px;
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+  }
+
+  /* ═══════════════ PANELS ═══════════════ */
+  .panel { display: none; padding: 28px; }
+  .panel.active { display: block; }
+
+  /* ═══════════════ FIELDS ═══════════════ */
+  .field { margin-bottom: 18px; position: relative; }
+  .field label {
+    display: block; margin-bottom: 7px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px; color: rgba(245,166,35,0.6);
+    letter-spacing: 1px;
+  }
+  .field input {
+    width: 100%; padding: 11px 14px;
+    background: var(--input-bg);
+    border: 2px solid rgba(42,111,219,0.3);
+    border-radius: 4px;
+    font-family: 'VT323', monospace;
+    font-size: 20px; letter-spacing: 1px;
+    color: #d4e8ff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    caret-color: var(--gold);
+  }
+  .field input::placeholder { color: rgba(100,140,200,0.35); font-size: 18px; }
+  .field input:focus {
+    border-color: var(--blue-glow);
+    box-shadow: 0 0 0 3px rgba(42,111,219,0.15), 0 0 12px rgba(42,111,219,0.2);
+  }
+  .field input.err {
+    border-color: var(--err);
+    box-shadow: 0 0 0 3px rgba(255,82,82,0.12);
+  }
+  .field input.ok {
+    border-color: rgba(105,240,174,0.5);
+  }
+  .field .msg {
+    position: absolute; bottom: -16px; left: 0;
+    font-family: 'VT323', monospace;
+    font-size: 14px; letter-spacing: 0.5px;
+    color: var(--err);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .field .msg.visible { opacity: 1; }
+  .field .msg.ok-msg { color: var(--ok); }
+
+  .forgot {
+    display: block; text-align: right;
+    font-family: 'VT323', monospace;
+    font-size: 16px; letter-spacing: 0.5px;
+    color: rgba(100,160,255,0.55);
+    text-decoration: none; margin-top: -8px; margin-bottom: 20px;
+    transition: color 0.2s;
+  }
+  .forgot:hover { color: rgba(100,180,255,0.85); }
+
+  /* ═══════════════ BUTTON ═══════════════ */
+  .btn {
+    width: 100%; padding: 13px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: #1a0a00;
+    background: linear-gradient(180deg, var(--gold-lt) 0%, var(--gold) 50%, var(--gold-dk) 100%);
+    border: 2px solid var(--gold);
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow:
+      0 0 16px rgba(245,166,35,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      inset 0 -2px 0 rgba(0,0,0,0.2);
+    transition: all 0.15s;
+    position: relative; overflow: hidden;
+  }
+  .btn:hover {
+    background: linear-gradient(180deg, #ffe599 0%, var(--gold-lt) 50%, var(--gold) 100%);
+    box-shadow:
+      0 0 28px rgba(245,166,35,0.65),
+      inset 0 1px 0 rgba(255,255,255,0.4),
+      inset 0 -2px 0 rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+  }
+  .btn:active { transform: translateY(1px); box-shadow: 0 0 8px rgba(245,166,35,0.3); }
+  .btn::after {
+    content: '▶';
+    margin-left: 10px;
+    font-size: 8px;
+  }
+
+  /* ═══════════════ STATUS ═══════════════ */
+  .status {
+    text-align: center; margin-top: 14px;
+    font-family: 'VT323', monospace;
+    font-size: 18px; min-height: 22px;
+    letter-spacing: 1px;
+  }
+  .status.success { color: var(--ok); }
+  .status.fail    { color: var(--err); }
+
+  /* ═══════════════ SERVER BADGE ═══════════════ */
+  .server-badge {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 14px; color: rgba(105,240,174,0.5);
+    letter-spacing: 2px;
+  }
+  .pulse-dot {
+    width: 6px; height: 6px;
+    background: #69f0ae;
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; }
+    50%      { opacity:0.3; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="world"></canvas>
+<div class="overlay"></div>
+
+<div class="page">
+  <div class="logo">
+    <div class="logo-title">ГОРОДОК</div>
+    <div class="logo-sub">• средневековая стратегия •</div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">⚔ ВХОД</button>
+      <button class="tab" onclick="switchTab('register')">✦ РЕГИСТРАЦИЯ</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="panel active" id="panel-login">
+      <div class="field">
+        <label>ЛОГИН</label>
+        <input type="text" id="l-login" placeholder="твой ник..." autocomplete="username"
+          oninput="validate('l-login', 'msg-l-login', v => v.length>=3 ? '' : 'минимум 3 символа')">
+        <span class="msg" id="msg-l-login"></span>
+      </div>
+      <div class="field">
+        <label>ПАРОЛЬ</label>
+        <input type="password" id="l-pass" placeholder="секретное слово..." autocomplete="current-password"
+          oninput="validate('l-pass', 'msg-l-pass', v => v.length>=4 ? '' : 'минимум 4 символа')">
+        <span class="msg" id="msg-l-pass"></span>
+      </div>
+      <a class="forgot" href="#">Забыли пароль?</a>
+      <button class="btn" onclick="submitLogin()">ВОЙТИ</button>
+      <div class="status" id="status-login"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="panel" id="panel-register">
+      <div class="field">
+        <label>ЛОГИН</label>
+        <input type="text" id="r-login" placeholder="придумай ник..."
+          oninput="validate('r-login', 'msg-r-login', v => v.length>=3 ? '' : 'минимум 3 символа')">
+        <span class="msg" id="msg-r-login"></span>
+      </div>
+      <div class="field">
+        <label>EMAIL</label>
+        <input type="email" id="r-email" placeholder="почта@домен.ru"
+          oninput="validate('r-email', 'msg-r-email', v => /^[^@]+@[^@]+\.[^@]+$/.test(v) ? '' : 'неверный формат email')">
+        <span class="msg" id="msg-r-email"></span>
+      </div>
+      <div class="field">
+        <label>ПАРОЛЬ</label>
+        <input type="password" id="r-pass" placeholder="надёжный пароль..."
+          oninput="validate('r-pass','msg-r-pass', v => v.length>=6 ? '' : 'минимум 6 символов')">
+        <span class="msg" id="msg-r-pass"></span>
+      </div>
+      <div class="field" style="margin-bottom:24px">
+        <label>ПОВТОРИТЕ ПАРОЛЬ</label>
+        <input type="password" id="r-pass2" placeholder="ещё раз..."
+          oninput="validateConfirm()">
+        <span class="msg" id="msg-r-pass2"></span>
+      </div>
+      <button class="btn" onclick="submitRegister()">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+      <div class="status" id="status-register"></div>
+    </div>
+  </div>
+
+  <div class="server-badge">
+    <div class="pulse-dot"></div>
+    СЕРВЕР ОНЛАЙН
+    <div class="pulse-dot"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', (tab==='login' && i===0)||(tab==='register' && i===1));
+  });
+  document.getElementById('panel-login').classList.toggle('active', tab==='login');
+  document.getElementById('panel-register').classList.toggle('active', tab==='register');
+}
+
+/* ═══════════════════════════════════════
+   VALIDATION
+═══════════════════════════════════════ */
+function validate(inputId, msgId, fn) {
+  const inp = document.getElementById(inputId);
+  const msg = document.getElementById(msgId);
+  const err = fn(inp.value.trim());
+  inp.classList.toggle('err', !!err && inp.value.length > 0);
+  inp.classList.toggle('ok', !err && inp.value.length > 0);
+  msg.textContent = err;
+  msg.classList.toggle('visible', !!err && inp.value.length > 0);
+  msg.classList.remove('ok-msg');
+  return !err;
+}
+
+function validateConfirm() {
+  const p1 = document.getElementById('r-pass').value;
+  const p2 = document.getElementById('r-pass2');
+  const msg = document.getElementById('msg-r-pass2');
+  const err = p2.value !== p1 ? 'пароли не совпадают' : '';
+  p2.classList.toggle('err', !!err && p2.value.length > 0);
+  p2.classList.toggle('ok', !err && p2.value.length > 0);
+  msg.textContent = err;
+  msg.classList.toggle('visible', !!err && p2.value.length > 0);
+  return !err && p2.value.length > 0;
+}
+
+/* ═══════════════════════════════════════
+   SUBMIT (AJAX имитация)
+═══════════════════════════════════════ */
+function submitLogin() {
+  const okL = validate('l-login','msg-l-login', v => v.length>=3?'':'минимум 3 символа');
+  const okP = validate('l-pass','msg-l-pass', v => v.length>=4?'':'минимум 4 символа');
+  const st = document.getElementById('status-login');
+  if (!okL || !okP) { st.textContent = '✖ исправьте ошибки'; st.className='status fail'; return; }
+  st.textContent = '...';  st.className='status';
+  setTimeout(() => {
+    console.log('Вход выполнен', { login: document.getElementById('l-login').value });
+    st.textContent = '✔ Вход выполнен! Загружаем город...';
+    st.className = 'status success';
+  }, 600);
+}
+
+function submitRegister() {
+  const okL  = validate('r-login','msg-r-login', v => v.length>=3?'':'минимум 3 символа');
+  const okE  = validate('r-email','msg-r-email', v => /^[^@]+@[^@]+\.[^@]+$/.test(v)?'':'неверный формат email');
+  const okP  = validate('r-pass','msg-r-pass', v => v.length>=6?'':'минимум 6 символов');
+  const okP2 = validateConfirm();
+  const st = document.getElementById('status-register');
+  if (!okL||!okE||!okP||!okP2) { st.textContent='✖ исправьте ошибки'; st.className='status fail'; return; }
+  st.textContent = '...'; st.className='status';
+  setTimeout(() => {
+    console.log('Регистрация выполнена', {
+      login: document.getElementById('r-login').value,
+      email: document.getElementById('r-email').value
+    });
+    st.textContent = '✔ Регистрация выполнена! Добро пожаловать!';
+    st.className = 'status success';
+  }, 800);
+}
+
+/* ═══════════════════════════════════════
+   PIXEL WORLD ENGINE
+═══════════════════════════════════════ */
+(function() {
+const C = document.getElementById('world');
+const ctx = C.getContext('2d');
+const PX = 3; // pixel size
+
+let W, H;
+function resize() {
+  W = C.width  = window.innerWidth;
+  H = C.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', () => { resize(); initWorld(); });
+
+/* ── palette ── */
+const PAL = {
+  sky0:'#06091a', sky1:'#0d1b3e', sky2:'#1a3a5c', sky3:'#2a5580',
+  star:'#c8d8ff',
+  moon:'#e8f0ff', moonSh:'#b0c0e8',
+  cloud0:'#1e3050', cloud1:'#263a60', cloud2:'#324878',
+  hill0:'#0b1505', hill1:'#0f1f08', hill2:'#16300d',
+  tree0:'#071204', tree1:'#0b1f07', tree2:'#12310b', tree3:'#1a4710', tree4:'#244f14',
+  trunk:'#2a1a08', trunk2:'#3d2810',
+  grass0:'#0a1904', grass1:'#0f2406', grass2:'#142d08', grass3:'#1a3a0b',
+  house0:'#1a1008', house1:'#2a1a0e', house2:'#3d2616', house3:'#4d3020',
+  roof0:'#2a1a30', roof1:'#3d2845', roof2:'#1a1022',
+  win0:'#ffe082', win1:'#ffb347', win2:'#ff8c00', winOff:'#1a1408',
+  chimSm:'#c8d0d8',
+  path:'#2a1e12', path2:'#3d2e1e',
+  fire0:'#ff6b00', fire1:'#ff9a00', fire2:'#ffcc00', fire3:'#ff3d00',
+  sq0:'#6b4820', sq1:'#8a5e2a',
+  bird:'#ddeeff',
+  sq_fur:'#c87820', sq_tail:'#e8a040',
+};
+
+/* ── stars ── */
+let stars = [];
+function makeStars() {
+  stars = [];
+  for (let i=0;i<120;i++) stars.push({
+    x: Math.random()*W, y: Math.random()*(H*0.45),
+    t: Math.random()*Math.PI*2, s: Math.random()>0.85?2:1
+  });
+}
+
+/* ── clouds ── */
+let clouds = [];
+function makeClouds() {
+  clouds = [];
+  for (let i=0;i<6;i++) clouds.push({
+    x: Math.random()*W, y: 30+Math.random()*(H*0.25),
+    w: 60+Math.random()*100, h: 20+Math.random()*30,
+    spd: 0.18+Math.random()*0.25,
+    alpha: 0.4+Math.random()*0.4
+  });
+}
+
+/* ── buildings ── */
+let buildings = [];
+function makeBuildings() {
+  buildings = [];
+  const base = H*0.62;
+  let x = W*0.28;
+  const configs = [
+    {w:48,h:72,win:[[8,16],[8,32],[24,16],[24,32],[8,50],[24,50]]},
+    {w:36,h:56,win:[[8,12],[8,28],[8,44]]},
+    {w:60,h:90,win:[[8,16],[28,16],[8,34],[28,34],[8,52],[28,52],[8,70],[28,70]]},
+    {w:42,h:66,win:[[8,14],[22,14],[8,32],[22,32],[8,50],[22,50]]},
+    {w:30,h:48,win:[[8,12],[8,28]]},
+    {w:54,h:80,win:[[8,16],[24,16],[40,16],[8,36],[24,36],[40,36],[8,56],[24,56],[40,56]]},
+    {w:38,h:60,win:[[8,14],[22,14],[8,32],[22,32],[8,50]]},
+    {w:44,h:70,win:[[8,16],[24,16],[8,34],[24,34],[8,52],[24,52]]},
+  ];
+  configs.forEach((cfg,i) => {
+    const bx = x + i*(10+Math.random()*8);
+    buildings.push({
+      x: bx, y: base-cfg.h, w: cfg.w, h: cfg.h,
+      wins: cfg.win.map(([wx,wy]) => ({
+        ox:wx, oy:wy,
+        on: Math.random()>0.3,
+        timer: Math.floor(Math.random()*300+100),
+        warm: Math.random()>0.5
+      })),
+      hasChimney: Math.random()>0.4,
+      chimneyX: cfg.w/2 + (Math.random()-0.5)*10,
+    });
+    x += cfg.w + 6 + Math.random()*10;
+  });
+}
+
+/* ── smoke particles ── */
+let smokes = [];
+function emitSmoke(bx, by, cx) {
+  if (Math.random()>0.04) return;
+  smokes.push({
+    x: bx+cx, y: by-4,
+    vx: (Math.random()-0.5)*0.4, vy: -0.5-Math.random()*0.4,
+    life: 120+Math.random()*80, maxLife: 200,
+    r: 3+Math.random()*5
+  });
+}
+
+/* ── trees ── */
+let trees = [];
+function makeTrees() {
+  trees = [];
+  const base = H*0.64;
+  // left forest
+  for (let i=0;i<22;i++) {
+    const x = 10+i*38+Math.random()*18;
+    const h = 55+Math.random()*50;
+    trees.push({
+      x, y: base, h, w: 18+Math.random()*14,
+      sway: Math.random()*Math.PI*2,
+      swaySpd: 0.008+Math.random()*0.006,
+      layers: Math.floor(2+Math.random()*2),
+      side:'left'
+    });
+  }
+  // right forest
+  for (let i=0;i<18;i++) {
+    const x = W*0.82+i*36+Math.random()*16;
+    const h = 55+Math.random()*50;
+    trees.push({
+      x, y: base, h, w: 18+Math.random()*14,
+      sway: Math.random()*Math.PI*2,
+      swaySpd: 0.008+Math.random()*0.006,
+      layers: Math.floor(2+Math.random()*2),
+      side:'right'
+    });
+  }
+}
+
+/* ── characters ── */
+let chars = [];
+function makeChars() {
+  chars = [];
+  const groundY = H*0.66;
+
+  // walking peasants (left side path)
+  for (let i=0;i<3;i++) {
+    chars.push({
+      type:'peasant',
+      x: W*0.18 + i*60, y: groundY,
+      vx: 0.35+Math.random()*0.2,
+      dir: 1, frame:0, fTimer:0,
+      minX: W*0.05, maxX: W*0.38,
+      colors:['#8a5e2a','#6b4820','#4a3010','#c8a060','#e8c080'],
+    });
+  }
+
+  // campfire group (left of town)
+  chars.push({ type:'campfire', x: W*0.24, y: groundY-2, frame:0, fTimer:0 });
+
+  // sitting people around campfire
+  for (let i=0;i<3;i++) {
+    const angle = (i/3)*Math.PI + Math.PI*0.1;
+    chars.push({
+      type:'sitter',
+      x: W*0.24 + Math.cos(angle)*18,
+      y: groundY - 4 + Math.sin(angle)*4,
+      frame:0, fTimer:0,
+      colors:['#8a5e2a','#c8a060','#4a3010'],
+      wobbleT: Math.random()*Math.PI*2,
+    });
+  }
+
+  // birds flying
+  for (let i=0;i<4;i++) {
+    chars.push({
+      type:'bird',
+      x: Math.random()*W, y: H*0.15+Math.random()*(H*0.2),
+      vx: 0.6+Math.random()*0.5, vy:0,
+      waveT: Math.random()*Math.PI*2,
+      frame:0, fTimer:0,
+    });
+  }
+
+  // squirrel on tree
+  for (let i=0;i<2;i++) {
+    const tree = trees.filter(t=>t.side==='left')[Math.floor(Math.random()*8)];
+    if (!tree) continue;
+    chars.push({
+      type:'squirrel',
+      x: tree.x, y: tree.y - tree.h*0.5 - 10,
+      vx:0, phase: Math.random()*Math.PI*2,
+      dir:1,
+    });
+  }
+}
+
+/* ─────────────────────────────────────
+   DRAW HELPERS
+───────────────────────────────────── */
+function px(x,y,c,w=PX,h=PX) {
+  ctx.fillStyle=c;
+  ctx.fillRect(Math.round(x)*PX, Math.round(y)*PX, w*PX, h*PX);
+}
+// raw pixel (no PX scaling)
+function rp(x,y,c,w=1,h=1) {
+  ctx.fillStyle=c;
+  ctx.fillRect(Math.round(x),Math.round(y),w,h);
+}
+
+/* ─────────────────────────────────────
+   SKY
+───────────────────────────────────── */
+function drawSky() {
+  const grad = ctx.createLinearGradient(0,0,0,H*0.65);
+  grad.addColorStop(0, PAL.sky0);
+  grad.addColorStop(0.3, PAL.sky1);
+  grad.addColorStop(0.7, PAL.sky2);
+  grad.addColorStop(1, PAL.sky3);
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H*0.65);
+}
+
+/* ─────────────────────────────────────
+   STARS
+───────────────────────────────────── */
+function drawStars(t) {
+  stars.forEach(s => {
+    s.t += 0.015;
+    const a = 0.3+0.5*Math.sin(s.t);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = PAL.star;
+    ctx.fillRect(s.x, s.y, s.s*PX, s.s*PX);
+  });
+  ctx.globalAlpha=1;
+}
+
+/* ─────────────────────────────────────
+   MOON
+───────────────────────────────────── */
+function drawMoon() {
+  const mx=W*0.85, my=H*0.08, mr=22;
+  // glow
+  const gl = ctx.createRadialGradient(mx,my,mr*0.3,mx,my,mr*3);
+  gl.addColorStop(0,'rgba(200,220,255,0.18)');
+  gl.addColorStop(1,'rgba(200,220,255,0)');
+  ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(mx,my,mr*3,0,Math.PI*2); ctx.fill();
+  // moon body (pixelated circle)
+  for (let dy=-mr;dy<=mr;dy+=PX) {
+    for (let dx=-mr;dx<=mr;dx+=PX) {
+      if (dx*dx+dy*dy<=mr*mr) {
+        const shadow = dx<-4 && dy<-4;
+        ctx.fillStyle = shadow ? PAL.moonSh : PAL.moon;
+        ctx.fillRect(mx+dx, my+dy, PX, PX);
+      }
+    }
+  }
+}
+
+/* ─────────────────────────────────────
+   CLOUDS
+───────────────────────────────────── */
+function drawClouds(t) {
+  clouds.forEach(c => {
+    c.x += c.spd;
+    if (c.x > W+c.w*2) c.x = -c.w*2;
+    ctx.globalAlpha = c.alpha;
+    // 3-layer pixelated cloud
+    const layers = [
+      {ox:0,    oy:c.h*0.3, w:c.w,     h:c.h*0.7, col:PAL.cloud0},
+      {ox:c.w*0.15, oy:0,   w:c.w*0.7, h:c.h*0.8, col:PAL.cloud1},
+      {ox:c.w*0.3,  oy:c.h*0.1, w:c.w*0.4,h:c.h*0.6,col:PAL.cloud2},
+    ];
+    layers.forEach(l => {
+      ctx.fillStyle=l.col;
+      for (let dy=0;dy<l.h;dy+=PX) {
+        const frac = dy/l.h;
+        const inset = Math.sin(frac*Math.PI)*l.w*0.15;
+        ctx.fillRect(Math.round(c.x+l.ox+inset),Math.round(c.y+l.oy+dy),Math.round(l.w-inset*2),PX);
+      }
+    });
+  });
+  ctx.globalAlpha=1;
+}
+
+/* ─────────────────────────────────────
+   HILLS
+───────────────────────────────────── */
+function drawHills() {
+  const base = H*0.65;
+  // back hill
+  ctx.fillStyle=PAL.hill0;
+  ctx.beginPath(); ctx.moveTo(0,base);
+  for (let x=0;x<=W;x+=PX) {
+    const y = base - 60*Math.sin(x/W*Math.PI*1.4+0.3) - 20*Math.sin(x/W*Math.PI*3.1);
+    if (x===0) ctx.lineTo(0,y); else ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,base); ctx.closePath(); ctx.fill();
+
+  // mid hill
+  ctx.fillStyle=PAL.hill1;
+  ctx.beginPath(); ctx.moveTo(0,base);
+  for (let x=0;x<=W;x+=PX) {
+    const y = base - 40*Math.sin(x/W*Math.PI*1.8+1.1) - 15*Math.sin(x/W*Math.PI*4.2);
+    if (x===0) ctx.lineTo(0,y); else ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,base); ctx.closePath(); ctx.fill();
+}
+
+/* ─────────────────────────────────────
+   GROUND
+───────────────────────────────────── */
+function drawGround() {
+  const top = H*0.63;
+  // main ground
+  const gg = ctx.createLinearGradient(0,top,0,H);
+  gg.addColorStop(0, PAL.grass2);
+  gg.addColorStop(0.3, PAL.grass1);
+  gg.addColorStop(1, PAL.grass0);
+  ctx.fillStyle=gg; ctx.fillRect(0,top,W,H-top);
+
+  // grass tufts (pixel dashes)
+  ctx.fillStyle=PAL.grass3;
+  for (let x=0;x<W;x+=PX*4) {
+    const ty = top + PX*Math.floor(Math.sin(x*0.05)*2);
+    ctx.fillRect(x, ty, PX*2, PX);
+    ctx.fillRect(x+PX, ty-PX, PX, PX*2);
+  }
+
+  // path through middle
+  const pathY = H*0.66;
+  ctx.fillStyle=PAL.path;
+  ctx.fillRect(W*0.15, pathY, W*0.7, PX*4);
+  ctx.fillStyle=PAL.path2;
+  ctx.fillRect(W*0.15+PX, pathY+PX, W*0.7-PX*2, PX*2);
+}
+
+/* ─────────────────────────────────────
+   TREE (pixel art)
+───────────────────────────────────── */
+function drawTree(tree, t) {
+  const sway = Math.sin(tree.sway + t*tree.swaySpd) * 1.5;
+  const bx = tree.x + sway;
+  const by = tree.y;
+  const th = tree.h;
+  const tw = tree.w;
+
+  // trunk
+  ctx.fillStyle=PAL.trunk;
+  ctx.fillRect(bx-PX*1.5, by-th*0.28, PX*3, th*0.28);
+  ctx.fillStyle=PAL.trunk2;
+  ctx.fillRect(bx-PX*0.5, by-th*0.28, PX, th*0.28);
+
+  // canopy layers
+  const lc = [PAL.tree1, PAL.tree2, PAL.tree3, PAL.tree4];
+  for (let l=0;l<tree.layers+1;l++) {
+    const ly = by - th*0.2 - l*(th*0.22);
+    const lw = (tw*(1.3-l*0.2)) * (1+0.03*Math.sin(tree.sway+t*tree.swaySpd+l));
+    const lh = th*0.32;
+    ctx.fillStyle = lc[Math.min(l+1,3)];
+    // pixel-fill triangle-ish
+    for (let dy=0;dy<lh;dy+=PX) {
+      const inset = (dy/lh)*lw*0.5;
+      ctx.fillRect(bx-lw/2+inset, ly-lh+dy, lw-inset*2, PX);
+    }
+    ctx.fillStyle = lc[Math.min(l+2,3)];
+    for (let dy=0;dy<lh*0.4;dy+=PX) {
+      const inset = (dy/lh)*lw*0.3;
+      ctx.fillRect(bx-lw*0.3+inset, ly-lh+dy, lw*0.6-inset*2, PX);
+    }
+  }
+  tree.sway += tree.swaySpd;
+}
+
+/* ─────────────────────────────────────
+   BUILDINGS
+───────────────────────────────────── */
+function drawBuildings(t) {
+  buildings.forEach(b => {
+    // shadow
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.fillRect(b.x+4, b.y+b.h-2, b.w, 6);
+
+    // walls (pixel columns)
+    for (let dx=0;dx<b.w;dx+=PX) {
+      const shade = dx/b.w;
+      const col = shade<0.5 ? PAL.house2 : PAL.house1;
+      ctx.fillStyle=col;
+      ctx.fillRect(b.x+dx, b.y, PX, b.h);
+    }
+    // edge shading
+    ctx.fillStyle=PAL.house0;
+    ctx.fillRect(b.x, b.y, PX*2, b.h);
+    ctx.fillStyle=PAL.house3;
+    ctx.fillRect(b.x+b.w-PX*2, b.y, PX*2, b.h);
+
+    // roof (pixelated triangle)
+    const rh = b.w*0.55;
+    ctx.fillStyle=PAL.roof1;
+    for (let dy=0;dy<rh;dy+=PX) {
+      const inset = (dy/rh)*(b.w*0.5);
+      ctx.fillStyle = dy<rh*0.3?PAL.roof0:PAL.roof1;
+      ctx.fillRect(b.x+inset, b.y-rh+dy, b.w-inset*2, PX);
+    }
+    // roof ridge
+    ctx.fillStyle=PAL.roof2;
+    ctx.fillRect(b.x+b.w*0.4, b.y-rh, b.w*0.2, PX*2);
+
+    // chimney
+    if (b.hasChimney) {
+      ctx.fillStyle=PAL.house1;
+      ctx.fillRect(b.x+b.chimneyX, b.y-rh-PX*5, PX*5, PX*5);
+      ctx.fillStyle=PAL.house0;
+      ctx.fillRect(b.x+b.chimneyX, b.y-rh-PX*5, PX*2, PX*5);
+      emitSmoke(b.x, b.y-rh-PX*5, b.chimneyX+PX*2);
+    }
+
+    // windows
+    b.wins.forEach(w => {
+      w.timer--;
+      if (w.timer<=0) {
+        w.on = Math.random()>0.15;
+        w.timer = 180+Math.floor(Math.random()*420);
+      }
+      if (w.on) {
+        const flicker = 0.85+0.15*Math.sin(t*0.08+b.x+w.oy);
+        ctx.globalAlpha=flicker;
+        ctx.fillStyle = w.warm ? PAL.win0 : PAL.win1;
+        ctx.fillRect(b.x+w.ox, b.y+w.oy, PX*4, PX*4);
+        ctx.fillStyle = w.warm ? PAL.win2 : PAL.win0;
+        ctx.fillRect(b.x+w.ox+PX, b.y+w.oy+PX, PX*2, PX*2);
+        ctx.globalAlpha=1;
+        // window glow
+        const gl=ctx.createRadialGradient(b.x+w.ox+PX*2,b.y+w.oy+PX*2,0,b.x+w.ox+PX*2,b.y+w.oy+PX*2,20);
+        gl.addColorStop(0,w.warm?'rgba(255,180,50,0.18)':'rgba(180,220,255,0.12)');
+        gl.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=gl; ctx.fillRect(b.x+w.ox-12,b.y+w.oy-12,40,40);
+      } else {
+        ctx.fillStyle=PAL.winOff;
+        ctx.fillRect(b.x+w.ox, b.y+w.oy, PX*4, PX*4);
+      }
+      // window frame
+      ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1;
+      ctx.strokeRect(b.x+w.ox, b.y+w.oy, PX*4, PX*4);
+    });
+  });
+}
+
+/* ─────────────────────────────────────
+   SMOKE
+───────────────────────────────────── */
+function updateSmokes() {
+  smokes = smokes.filter(s=>s.life>0);
+  smokes.forEach(s => {
+    s.x+=s.vx; s.y+=s.vy; s.life--;
+    const a = (s.life/s.maxLife)*0.55;
+    const r = s.r*(1 - s.life/s.maxLife*0.3);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=PAL.chimSm;
+    for (let dy=-r;dy<r;dy+=PX) {
+      for (let dx=-r;dx<r;dx+=PX) {
+        if (dx*dx+dy*dy<r*r) ctx.fillRect(s.x+dx,s.y+dy,PX,PX);
+      }
+    }
+  });
+  ctx.globalAlpha=1;
+}
+
+/* ─────────────────────────────────────
+   CHARACTERS
+───────────────────────────────────── */
+function drawChar_peasant(c, t) {
+  c.fTimer++;
+  if (c.fTimer>12) { c.frame=(c.frame+1)%4; c.fTimer=0; }
+  c.x += c.vx * c.dir;
+  if (c.x>c.maxX) { c.dir=-1; }
+  if (c.x<c.minX) { c.dir=1; }
+
+  const x=c.x, y=c.y;
+  const d=c.dir;
+  const legOff = [0,2,0,-2][c.frame]*PX;
+
+  // shadow
+  ctx.globalAlpha=0.3;
+  ctx.fillStyle='#000';
+  ctx.fillRect(x-8,y+2,16,PX);
+  ctx.globalAlpha=1;
+
+  // body (8px tall sprite)
+  ctx.fillStyle=c.colors[0]; ctx.fillRect(x-PX*1.5,y-PX*5,PX*3,PX*3); // tunic
+  ctx.fillStyle=c.colors[3]; ctx.fillRect(x-PX*0.5,y-PX*7,PX,PX*2);    // head
+  ctx.fillStyle=c.colors[4]; ctx.fillRect(x-PX,y-PX*8,PX*2,PX);         // hair/hat
+  ctx.fillStyle=c.colors[1]; ctx.fillRect(x-PX*1.5+legOff,y-PX*2,PX,PX*2); // leg L
+  ctx.fillStyle=c.colors[1]; ctx.fillRect(x+PX*0.5-legOff,y-PX*2,PX,PX*2); // leg R
+  // arm
+  ctx.fillStyle=c.colors[2];
+  if (d>0) ctx.fillRect(x+PX*1.5,y-PX*5+legOff/2,PX,PX*2);
+  else      ctx.fillRect(x-PX*2.5,y-PX*5+legOff/2,PX,PX*2);
+}
+
+function drawChar_campfire(c, t) {
+  c.fTimer++;
+  if (c.fTimer>5) { c.frame=(c.frame+1)%4; c.fTimer=0; }
+  const x=c.x, y=c.y;
+  // logs
+  ctx.fillStyle='#3d2010'; ctx.fillRect(x-12,y-3,8,PX*2);
+  ctx.fillRect(x+4,y-3,8,PX*2);
+  // fire layers
+  const f=[PAL.fire3,PAL.fire0,PAL.fire1,PAL.fire2];
+  const frames=[[0,0,1,1],[0,1,1,0],[1,0,0,1],[1,1,0,0]];
+  const fr=frames[c.frame];
+  for (let i=0;i<4;i++) {
+    ctx.globalAlpha=0.7+0.3*fr[i];
+    ctx.fillStyle=f[i];
+    ctx.fillRect(x-4+i*2,y-8-fr[i]*4, PX*2, PX*3+fr[i]*2);
+  }
+  ctx.globalAlpha=1;
+  // glow
+  const gl=ctx.createRadialGradient(x,y-4,0,x,y-4,30);
+  gl.addColorStop(0,'rgba(255,120,0,0.25)'); gl.addColorStop(1,'rgba(255,120,0,0)');
+  ctx.fillStyle=gl; ctx.fillRect(x-30,y-34,60,60);
+}
+
+function drawChar_sitter(c, t) {
+  c.wobbleT+=0.03;
+  const wobble=Math.sin(c.wobbleT)*1.5;
+  const x=c.x, y=c.y+wobble;
+  ctx.fillStyle=c.colors[1]; ctx.fillRect(x-PX,y-PX*4,PX*2,PX); // head
+  ctx.fillStyle=c.colors[0]; ctx.fillRect(x-PX*1.5,y-PX*3,PX*3,PX*2); // body
+  ctx.fillStyle=c.colors[2]; ctx.fillRect(x-PX*2,y-PX*1,PX*4,PX); // legs
+}
+
+function drawChar_bird(c, t) {
+  c.fTimer++;
+  if (c.fTimer>8) { c.frame=(c.frame+1)%2; c.fTimer=0; }
+  c.waveT+=0.03;
+  c.x += c.vx;
+  c.y += Math.sin(c.waveT)*0.4;
+  if (c.x>W+20) { c.x=-20; c.y=H*0.12+Math.random()*(H*0.25); }
+  const x=c.x,y=c.y;
+  const wingY = c.frame===0 ? -3 : 2;
+  ctx.fillStyle=PAL.bird;
+  ctx.fillRect(x-PX*3,y+wingY,PX*2,PX); // left wing
+  ctx.fillRect(x+PX,  y+wingY,PX*2,PX); // right wing
+  ctx.fillRect(x-PX,  y,PX*2,PX);        // body
+  ctx.fillStyle='#ff9999'; ctx.fillRect(x+PX,y-PX,PX,PX); // beak
+}
+
+function drawChar_squirrel(c, t) {
+  c.phase+=0.04;
+  const x=c.x+Math.sin(c.phase)*8;
+  const y=c.y+Math.cos(c.phase*0.7)*5;
+  // body
+  ctx.fillStyle=PAL.sq_fur;
+  ctx.fillRect(x-PX*1.5,y-PX*4,PX*3,PX*3);
+  ctx.fillStyle=PAL.sq_tail;
+  ctx.fillRect(x-PX*2.5,y-PX*5,PX*2,PX*3); // tail
+  ctx.fillRect(x-PX*3,y-PX*7,PX,PX*3);
+  ctx.fillStyle=PAL.sq_fur;
+  ctx.fillRect(x-PX*0.5,y-PX*5.5,PX,PX*1.5); // head
+  ctx.fillStyle='#1a0a00'; ctx.fillRect(x,y-PX*5,PX,PX); // eye
+}
+
+/* ─────────────────────────────────────
+   MAIN LOOP
+───────────────────────────────────── */
+let t=0;
+function initWorld() {
+  makeStars(); makeClouds(); makeBuildings(); makeTrees(); makeChars();
+}
+
+function frame() {
+  t++;
+  ctx.clearRect(0,0,W,H);
+
+  drawSky();
+  drawStars(t);
+  drawMoon();
+  drawClouds(t);
+  drawHills();
+
+  // back trees
+  trees.filter(tr=>tr.side==='left'&&tr.y<H*0.63).forEach(tr=>drawTree(tr,t));
+  trees.filter(tr=>tr.side==='right'&&tr.y<H*0.63).forEach(tr=>drawTree(tr,t));
+
+  drawGround();
+  drawBuildings(t);
+
+  // front trees
+  trees.filter(tr=>tr.side==='left'&&tr.y>=H*0.63).forEach(tr=>drawTree(tr,t));
+  trees.filter(tr=>tr.side==='right'&&tr.y>=H*0.63).forEach(tr=>drawTree(tr,t));
+
+  // smoke
+  updateSmokes();
+
+  // characters
+  chars.forEach(c => {
+    if (c.type==='campfire')  drawChar_campfire(c,t);
+    else if (c.type==='sitter')   drawChar_sitter(c,t);
+    else if (c.type==='peasant')  drawChar_peasant(c,t);
+    else if (c.type==='bird')     drawChar_bird(c,t);
+    else if (c.type==='squirrel') drawChar_squirrel(c,t);
+  });
+
+  requestAnimationFrame(frame);
+}
+
+initWorld();
+frame();
+})();
+</script>
+</body>
+</html>
