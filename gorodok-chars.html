@@ -228,10 +228,10 @@ header{text-align:center;padding:32px 20px 20px;position:relative;z-index:1;}
       <div class="wiz-page" id="step-0">
         <div class="opt-label">ПОЛ</div>
         <div class="gender-row">
-          <div class="gender-btn" id="g-male"   onclick="setProp('gender','male');renderStep()">
+          <div class="gender-btn" id="g-male"   onclick="setProp('gender','male');form.hair='short';renderStep()">
             <span class="gi">♂</span><span class="gl">МУЖСКОЙ</span>
           </div>
-          <div class="gender-btn" id="g-female" onclick="setProp('gender','female');renderStep()">
+          <div class="gender-btn" id="g-female" onclick="setProp('gender','female');form.hair='bob';renderStep()">
             <span class="gi">♀</span><span class="gl">ЖЕНСКИЙ</span>
           </div>
         </div>
@@ -576,8 +576,8 @@ function drawHair(ctx,hair,gender,col,hx,hy,hw,hh,s){
 function darken(hex,amt){
   let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
   if(isNaN(r)){return hex;}
-  r=Math.max(0,Math.floor(r*(1-amt)));g=Math.max(0,Math.floor(g*(1-amt)));b=Math.max(0,Math.floor(b*(1-amt)));
-  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  const clamp=v=>Math.min(255,Math.max(0,Math.floor(v*(1-amt))));
+  return '#'+[clamp(r),clamp(g),clamp(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
 /* ════════════════════════════════════
@@ -643,23 +643,26 @@ function renderStep0(){
 
 function renderStep1(){
   // Faces
-  renderStrip('strip-face',FACES,form.face,(id)=>{form.face=id;renderPreview();},
-    (face,c)=>{const cv=c.canvas;drawFaceThumb(cv,face.id,form.gender,form.skinCol,form.hairCol);});
+  renderStrip('strip-face',FACES,form.face,
+    (id)=>{form.face=id;renderPreview();},
+    (face,cv)=>drawFaceThumb(cv,face.id,form.gender,form.skinCol,form.hairCol));
   // Hairs
   const hairs=form.gender==='male'?HAIRS_M:HAIRS_F;
   if(!hairs.find(h=>h.id===form.hair))form.hair=hairs[0].id;
-  renderStrip('strip-hair',hairs,form.hair,(id)=>{form.hair=id;renderPreview();},
-    (hair,c)=>{const cv=c.canvas;drawHairThumb(cv,hair.id,form.gender,form.hairCol,form.skinCol);});
-  // Hair colors
+  renderStrip('strip-hair',hairs,form.hair,
+    (id)=>{form.hair=id;renderPreview();},
+    (hair,cv)=>drawHairThumb(cv,hair.id,form.gender,form.hairCol,form.skinCol));
+  // Hair colors — после выбора перерисовываем миниатюры
   renderPalette('pal-hair',HAIR_COLS,form.hairCol,(col)=>{form.hairCol=col;renderStep1();renderPreview();});
   // Skin colors
   renderPalette('pal-skin',SKIN_COLS,form.skinCol,(col)=>{form.skinCol=col;renderStep1();renderPreview();});
 }
 
 function renderStep2(){
-  renderStrip('strip-cloth',CLOTHES,form.cloth,(id)=>{form.cloth=id;renderPreview();},
-    (cloth,c)=>{c.querySelector('.si-lbl').textContent=cloth.icon+' '+cloth.label;});
-  renderPalette('pal-cloth',CLOTH_COLS,form.clothCol,(col)=>{form.clothCol=col;renderPreview();});
+  renderStrip('strip-cloth',CLOTHES,form.cloth,
+    (id)=>{form.cloth=id;renderPreview();},
+    (cloth,cv)=>drawClothThumb(cv,cloth.id,form.clothCol));
+  renderPalette('pal-cloth',CLOTH_COLS,form.clothCol,(col)=>{form.clothCol=col;renderStep2();renderPreview();});
 }
 
 function renderStep3(){
@@ -724,8 +727,8 @@ function renderStrip(id,items,active,onSelect,onDraw){
     const lbl=document.createElement('div');lbl.className='si-lbl';lbl.textContent=item.label;
     d.appendChild(cv);d.appendChild(lbl);
     d.onclick=()=>{onSelect(item.id);el.querySelectorAll('.strip-item').forEach(x=>x.classList.remove('active'));d.classList.add('active');};
-    onDraw(item,d);
     el.appendChild(d);
+    onDraw(item,cv); // передаём сам canvas, не div
   });
 }
 
@@ -742,25 +745,209 @@ function renderPalette(id,cols,active,onSelect){
 
 /* ── Thumbnails ── */
 function drawFaceThumb(cv,faceId,gender,skinCol,hairCol){
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,44,44);
-  const s=2,hx=8,hy=6,hw=28,hh=30;
-  ctx.fillStyle=skinCol||'#f0c88a';ctx.fillRect(hx,hy,hw,hh);
-  ctx.fillStyle='#1a0a00';ctx.fillRect(hx+8,hy+11,5,5);ctx.fillRect(hx+16,hy+11,5,5);
-  if(faceId==='f2'){ctx.fillRect(hx+11,hy+8,6,2);}   // брови
-  if(faceId==='f4'){ctx.fillStyle=skinCol;ctx.fillRect(hx,hy+hh-4,hw,8);} // round chin
-  if(gender==='female'){ctx.fillStyle='#c05060';ctx.fillRect(hx+8,hy+22,12,3);}
-  // hair top
-  ctx.fillStyle=hairCol||'#3a2208';ctx.fillRect(hx,hy,hw,8);
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const sk=skinCol||'#f0c88a';
+  const hc=hairCol||'#3a2208';
+
+  // Форма головы зависит от типа лица
+  let hx=9,hy=5,hw=26,hh=28;
+  if(faceId==='f1'){/* стандарт */}
+  if(faceId==='f2'){hx=11;hw=22;hh=30;} // острое — у́же и длиннее
+  if(faceId==='f3'){hx=6;hw=32;hh=26;}  // широкое — шире и ниже
+  if(faceId==='f4'){hw=28;hh=32;hx=8;}  // круглое — квадратнее
+
+  ctx.fillStyle=sk;ctx.fillRect(hx,hy,hw,hh);
+  // подбородок: у f4 — скруглённый (extra row)
+  if(faceId==='f4'){ctx.fillRect(hx+2,hy+hh,hw-4,3);}
+  // тени по бокам у f2 (острые скулы)
+  if(faceId==='f2'){ctx.fillStyle=darken(sk,.15);ctx.fillRect(hx,hy+Math.floor(hh*.4),3,Math.floor(hh*.4));ctx.fillRect(hx+hw-3,hy+Math.floor(hh*.4),3,Math.floor(hh*.4));}
+
+  // брови
+  ctx.fillStyle=darken(hc,.1)||'#1a0a00';
+  if(faceId==='f2'){// приподнятые острые брови
+    ctx.fillRect(hx+4,hy+7,5,2);ctx.fillRect(hx+hw-9,hy+7,5,2);
+  } else if(faceId==='f3'){// густые широкие брови
+    ctx.fillRect(hx+4,hy+9,7,3);ctx.fillRect(hx+hw-11,hy+9,7,3);
+  } else {
+    ctx.fillRect(hx+5,hy+8,5,2);ctx.fillRect(hx+hw-10,hy+8,5,2);
+  }
+
+  // глаза
+  ctx.fillStyle='#1a0a00';
+  const eyeY=hy+Math.floor(hh*.42);
+  ctx.fillRect(hx+Math.floor(hw*.2),eyeY,5,4);
+  ctx.fillRect(hx+Math.floor(hw*.58),eyeY,5,4);
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  ctx.fillRect(hx+Math.floor(hw*.2)+1,eyeY+1,2,2);
+  ctx.fillRect(hx+Math.floor(hw*.58)+1,eyeY+1,2,2);
+
+  // женские ресницы
+  if(gender==='female'){
+    ctx.fillStyle='#1a0a00';
+    ctx.fillRect(hx+Math.floor(hw*.17),eyeY-2,8,2);
+    ctx.fillRect(hx+Math.floor(hw*.55),eyeY-2,8,2);
+  }
+
+  // нос
+  ctx.fillStyle=darken(sk,.18);
+  ctx.fillRect(hx+Math.floor(hw*.44),eyeY+6,4,3);
+
+  // рот
+  const mouthY=hy+Math.floor(hh*.75);
+  ctx.fillStyle=gender==='female'?'#c05060':'rgba(0,0,0,0.25)';
+  const mw=faceId==='f3'?12:8;
+  ctx.fillRect(hx+Math.floor((hw-mw)/2),mouthY,mw,2);
+
+  // причёска (верхняя полоска — цвет волос)
+  ctx.fillStyle=hc;
+  ctx.fillRect(hx-1,hy-1,hw+2,8);
 }
+
 function drawHairThumb(cv,hairId,gender,hairCol,skinCol){
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,44,44);
-  ctx.fillStyle=skinCol||'#f0c88a';ctx.fillRect(10,10,24,28);
-  ctx.fillStyle=hairCol||'#3a2208';
-  if(hairId==='short'||hairId==='bob'){ctx.fillRect(8,8,28,10);ctx.fillRect(8,12,4,14);ctx.fillRect(32,12,4,14);}
-  if(hairId==='buzz'){ctx.fillRect(10,10,24,4);}
-  if(hairId==='long'||hairId==='braids'){ctx.fillRect(8,8,28,10);ctx.fillRect(6,10,5,30);ctx.fillRect(33,10,5,30);}
-  if(hairId==='mohawk'){ctx.fillRect(18,2,8,20);}
-  if(hairId==='ponytail'){ctx.fillRect(8,8,28,10);ctx.fillRect(32,14,5,22);}
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const sk=skinCol||'#f0c88a';
+  const hc=hairCol||'#3a2208';
+  const hd=darken(hc,.3);
+
+  // база: голова
+  ctx.fillStyle=sk;ctx.fillRect(10,10,24,26);
+
+  ctx.fillStyle=hc;
+  if(hairId==='short'||hairId==='bob'){
+    ctx.fillRect(8,8,28,9);   // верхняя часть
+    ctx.fillRect(8,10,3,14);  // левая боковая
+    ctx.fillRect(33,10,3,14); // правая боковая
+    if(hairId==='bob'){       // каре — ровный нижний край
+      ctx.fillRect(8,22,28,4);
+    }
+  }
+  if(hairId==='buzz'){
+    ctx.fillRect(10,10,24,5); // только тонкая полоска
+    ctx.fillStyle=darken(hc,.5); // более тёмный контур
+    ctx.fillRect(10,10,24,2);
+  }
+  if(hairId==='long'){
+    ctx.fillRect(8,8,28,9);
+    ctx.fillRect(6,10,4,30);  // длинные пряди слева
+    ctx.fillRect(34,10,4,30); // длинные пряди справа
+    // пряди на плечах
+    ctx.fillRect(6,38,6,4);ctx.fillRect(32,38,6,4);
+  }
+  if(hairId==='braids'){
+    ctx.fillRect(8,8,28,9);
+    // косы: чередующиеся сегменты
+    for(let i=0;i<6;i++){
+      ctx.fillStyle=i%2===0?hc:hd;
+      ctx.fillRect(6,10+i*5,5,5);
+      ctx.fillRect(33,10+i*5,5,5);
+    }
+  }
+  if(hairId==='mohawk'){
+    // по бокам — выбрито (только кожа)
+    ctx.fillStyle=sk;ctx.fillRect(8,8,8,26);ctx.fillRect(28,8,8,26);
+    // гребень по центру
+    ctx.fillStyle=hc;
+    ctx.fillRect(18,2,8,32);
+    ctx.fillStyle=darken(hc,.3);ctx.fillRect(19,2,2,32);
+  }
+  if(hairId==='ponytail'){
+    ctx.fillRect(8,8,28,9);
+    // хвост сбоку-сзади
+    ctx.fillRect(33,10,5,26);
+    ctx.fillRect(31,34,7,4);
+    // резинка
+    ctx.fillStyle=darken(hc,.5);ctx.fillRect(33,22,5,3);
+  }
+}
+
+function drawClothThumb(cv,clothId,clothCol){
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const c=clothCol||'#1e2a40';
+  const cd=darken(c,.3);
+  const cl=darken(c,-.2); // lighter
+
+  // Базовая форма торса (всегда одинаковая)
+  // рукава
+  ctx.fillStyle=c;
+  ctx.fillRect(4,14,8,16);   // левый рукав
+  ctx.fillRect(32,14,8,16);  // правый рукав
+  // тело
+  ctx.fillRect(10,10,24,26);
+  // тень низа
+  ctx.fillStyle=cd;ctx.fillRect(10,30,24,6);
+
+  // Уникальный силуэт/деталь для каждого типа
+  if(clothId==='casual'){
+    // простая футболка — воротник-вырез
+    ctx.fillStyle=cl;
+    ctx.fillRect(17,10,10,4); // вырез
+    ctx.fillStyle=darken(c,.5);
+    ctx.fillRect(21,10,2,12); // вертикальная нить посередине
+  }
+  if(clothId==='suit'){
+    // пиджак: отвороты лацканов
+    ctx.fillStyle='#f0e8d0';
+    ctx.fillRect(17,10,4,10); // левый лацкан
+    ctx.fillRect(23,10,4,10); // правый лацкан
+    ctx.fillStyle=cd;
+    ctx.fillRect(15,10,6,18); // левая пола
+    ctx.fillRect(23,10,6,18); // правая пола
+    // пуговицы
+    ctx.fillStyle='#c0a040';
+    ctx.fillRect(21,16,2,2);ctx.fillRect(21,21,2,2);ctx.fillRect(21,26,2,2);
+  }
+  if(clothId==='jacket'){
+    // куртка: молния и воротник
+    ctx.fillStyle=darken(c,.4);
+    ctx.fillRect(20,10,4,26); // молния
+    ctx.fillStyle=darken(c,.2);
+    ctx.fillRect(10,10,6,4);  // воротник лево
+    ctx.fillRect(28,10,6,4);  // воротник право
+    // карманы
+    ctx.fillStyle=cd;
+    ctx.fillRect(11,28,6,6);ctx.fillRect(27,28,6,6);
+  }
+  if(clothId==='hoodie'){
+    // худи: капюшон и кармашек-кенгуру
+    ctx.fillStyle=cd;
+    ctx.fillRect(13,6,18,10); // капюшон
+    ctx.fillRect(16,8,12,8);  // внутренность капюшона (темнее)
+    ctx.fillStyle=darken(c,.15);
+    ctx.fillRect(14,28,16,8); // карман кенгуру
+    ctx.fillStyle=cd;ctx.fillRect(21,28,2,8); // разделитель кармана
+  }
+  if(clothId==='uniform'){
+    // форма: погоны и нагрудный карман
+    ctx.fillStyle='#f0d060';
+    ctx.fillRect(10,10,8,4);  // левый погон
+    ctx.fillRect(26,10,8,4);  // правый погон
+    ctx.fillRect(10,10,4,8);  // лычка лево
+    ctx.fillRect(30,10,4,8);  // лычка право
+    // нагрудный карман
+    ctx.fillStyle=cd;
+    ctx.fillRect(13,18,8,7);
+    ctx.fillStyle='#f0d060';ctx.fillRect(13,18,8,2); // клапан кармана
+  }
+  if(clothId==='robe'){
+    // халат: медицинский крест + воротник-стойка
+    ctx.fillStyle='rgba(255,255,255,0.7)';
+    ctx.fillRect(10,10,24,26); // поверх — белый халат
+    ctx.fillStyle=c;
+    ctx.fillRect(10,10,6,26);  // левая пола (цветная)
+    // крест
+    ctx.fillStyle='#e03030';
+    ctx.fillRect(24,14,6,14);  // вертикаль креста
+    ctx.fillRect(21,19,12,5);  // горизонталь
+    // воротник
+    ctx.fillStyle='rgba(255,255,255,0.9)';
+    ctx.fillRect(16,8,12,6);
+  }
 }
 
 /* ── Preview ── */
