@@ -1,0 +1,39 @@
+{
+  "tests": [
+    {
+      "name": "GET map tiles",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"count": 0},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST single tile",
+      "method": "POST",
+      "path": "/",
+      "body": {"x": 0, "y": 0, "tile_type": 1, "walkable": true, "sprite_id": "road"},
+      "expectedStatus": 200,
+      "expectedBody": {"saved": 1},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST batch tiles",
+      "method": "POST",
+      "path": "/",
+      "body": {"tiles": [{"x": 1, "y": 0, "tile_type": 0}, {"x": 2, "y": 0, "tile_type": 0}]},
+      "expectedStatus": 200,
+      "expectedBody": {"saved": 2},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST fill rect",
+      "method": "POST",
+      "path": "/?action=fill",
+      "body": {"x1": 3, "y1": 0, "x2": 5, "y2": 2, "tile_type": 3, "walkable": false},
+      "expectedStatus": 200,
+      "expectedBody": {"filled": 9},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
