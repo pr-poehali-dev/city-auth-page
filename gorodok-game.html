@@ -593,6 +593,49 @@ const mmCanvas=document.getElementById('minimap');
 const mmCtx=mmCanvas.getContext('2d');
 
 /* ═══════════════════════════════════
+   SPRITES
+═══════════════════════════════════ */
+const CDN='https://cdn.poehali.dev/projects/3fddb330-2995-4a7b-b6ba-ce1064d5f9a6/files/';
+const SPRITES={};
+const SPRITE_MAP={
+  grass:    'd871757c-9dde-40a7-a177-4341c0e4249a.jpg',
+  dirt:     'f5cacf8d-6d63-4fc9-bbcd-c01ac4ce037c.jpg',
+  road_h:   '8031c542-0d9f-4a54-93de-7bc683a9705f.jpg',
+  road_v:   'd3125317-a8ca-43e9-9c94-4693b534eb05.jpg',
+  road_cross:'b87742b9-788c-46f3-8881-a3c21cdfcaf7.jpg',
+  road_t:   '40778aac-a674-4742-a178-fd49ac4a67c6.jpg',
+  road_corner:'fe232868-37c5-478d-9ddb-0eda06385f37.jpg',
+  tree_oak: 'ae24076c-da71-4e90-be4d-dc0d509257da.jpg',
+  tree_pine:'7a0a9aa3-7e2a-4c24-b8b5-72f30d988214.jpg',
+};
+// Спрайты для базовых типов (fallback по tile_type)
+const SPRITE_BY_TYPE={
+  0:'grass', 1:'road_h', 3:'tree_oak',
+};
+let spritesReady=0,spritesTotal=Object.keys(SPRITE_MAP).length;
+Object.entries(SPRITE_MAP).forEach(([key,file])=>{
+  const img=new Image();
+  img.src=CDN+file;
+  img.onload=()=>{spritesReady++;};
+  SPRITES[key]=img;
+});
+
+// Нарисовать спрайт в изометрическом ромбе через clip
+function drawSpriteIso(spKey,sx,sy){
+  const img=SPRITES[spKey];
+  if(!img||!img.complete||img.naturalWidth===0) return false;
+  ctx.save();
+  // clip diamond
+  ctx.beginPath();
+  ctx.moveTo(sx,sy);ctx.lineTo(sx+TW/2,sy+TH/2);
+  ctx.lineTo(sx,sy+TH);ctx.lineTo(sx-TW/2,sy+TH/2);
+  ctx.closePath();ctx.clip();
+  ctx.drawImage(img,sx-TW/2,sy,TW,TH);
+  ctx.restore();
+  return true;
+}
+
+/* ═══════════════════════════════════
    PALETTE
 ═══════════════════════════════════ */
 const COL={
@@ -645,32 +688,58 @@ function drawTile(tx,ty,sx,sy){
   const isNear=nearZone&&nearZone.nearTiles.some(n=>n.x===tx&&n.y===ty);
 
   if(t===T.GRASS){
-    fillTile(sx,sy,COL.grass[ci]);
-    strokeTile(sx,sy,'rgba(0,0,0,0.1)',0.4);
+    if(!drawSpriteIso('grass',sx,sy)){
+      fillTile(sx,sy,COL.grass[ci]);
+      strokeTile(sx,sy,'rgba(0,0,0,0.1)',0.4);
+    }
     if(hover){fillTile(sx,sy,'rgba(255,220,80,0.22)');}
     return;
   }
   if(t===T.ROAD){
-    fillTile(sx,sy,COL.road[ci%3]);
-    strokeTile(sx,sy,'rgba(0,0,0,0.12)',0.4);
-    // dashes
-    ctx.save();ctx.globalAlpha=0.18;ctx.strokeStyle='#c0ccd8';ctx.lineWidth=1;ctx.setLineDash([4,6]);
-    ctx.beginPath();ctx.moveTo(sx-TW*.25,sy+TH*.75);ctx.lineTo(sx+TW*.25,sy+TH*.25);ctx.stroke();
-    ctx.setLineDash([]);ctx.restore();
+    // определяем тип дороги по соседям
+    const up   =ty>0      && map[ty-1]?.[tx]===T.ROAD;
+    const down =ty<MAP_H-1&& map[ty+1]?.[tx]===T.ROAD;
+    const left =tx>0      && map[ty]?.[tx-1]===T.ROAD;
+    const right=tx<MAP_W-1&& map[ty]?.[tx+1]===T.ROAD;
+    const conn=up+down+left+right;
+    let spKey='road_h';
+    if(conn>=3)                          spKey='road_cross';
+    else if(conn===2){
+      if(up&&down)                       spKey='road_v';
+      else if(left&&right)               spKey='road_h';
+      else if(up&&right||down&&left)     spKey='road_corner';
+      else                               spKey='road_t';
+    } else if(up||down)                  spKey='road_v';
+    if(!drawSpriteIso(spKey,sx,sy)){
+      fillTile(sx,sy,COL.road[ci%3]);
+      strokeTile(sx,sy,'rgba(0,0,0,0.12)',0.4);
+      ctx.save();ctx.globalAlpha=0.18;ctx.strokeStyle='#c0ccd8';ctx.lineWidth=1;ctx.setLineDash([4,6]);
+      ctx.beginPath();ctx.moveTo(sx-TW*.25,sy+TH*.75);ctx.lineTo(sx+TW*.25,sy+TH*.25);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+    }
     if(hover){fillTile(sx,sy,'rgba(255,220,80,0.18)');}
     return;
   }
   if(t===T.TREE){
-    fillTile(sx,sy,COL.tree[ci]);
-    strokeTile(sx,sy,'rgba(0,0,0,0.1)',0.3);
-    const trH=20;
-    ctx.fillStyle=COL.trunk[ci%2];ctx.fillRect(sx-2.5,sy+TH/2-trH*.4,5,trH);
-    const lc=COL.treeTop;
-    for(let l=0;l<3;l++){
-      const ly=sy+TH/2-trH*.35-(l*11);
-      const lw=(TW*.52)*(1-l*.18);const lh=TH*.55+l*2;
-      ctx.fillStyle=lc[(ci+l)%4];
-      ctx.beginPath();ctx.moveTo(sx,ly-lh*.55);ctx.lineTo(sx+lw/2,ly);ctx.lineTo(sx-lw/2,ly);ctx.closePath();ctx.fill();
+    // чередуем дуб/сосну по координатам
+    const treeKey=(tx+ty)%2===0?'tree_oak':'tree_pine';
+    if(!drawSpriteIso('grass',sx,sy)){
+      fillTile(sx,sy,COL.tree[ci]);
+    }
+    const img=SPRITES[treeKey];
+    if(img&&img.complete&&img.naturalWidth>0){
+      // деревья выше тайла — рисуем со сдвигом вверх без клипа
+      const iw=TW,ih=TW*1.5;
+      ctx.drawImage(img,sx-iw/2,sy+TH/2-ih+TH*.3,iw,ih);
+    } else {
+      strokeTile(sx,sy,'rgba(0,0,0,0.1)',0.3);
+      const trH=20;
+      ctx.fillStyle=COL.trunk[ci%2];ctx.fillRect(sx-2.5,sy+TH/2-trH*.4,5,trH);
+      for(let l=0;l<3;l++){
+        const ly=sy+TH/2-trH*.35-(l*11),lw=(TW*.52)*(1-l*.18),lh=TH*.55+l*2;
+        ctx.fillStyle=COL.treeTop[(ci+l)%4];
+        ctx.beginPath();ctx.moveTo(sx,ly-lh*.55);ctx.lineTo(sx+lw/2,ly);ctx.lineTo(sx-lw/2,ly);ctx.closePath();ctx.fill();
+      }
     }
     if(hover){strokeTile(sx,sy,'rgba(255,220,80,0.6)',1.5);}
     return;

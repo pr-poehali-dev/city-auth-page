@@ -189,6 +189,39 @@ const MAP_W = 50, MAP_H = 50;
 const CELL = 20; // px per cell in editor (base, before zoom)
 
 /* ════════════════════════════════════
+   SPRITES
+════════════════════════════════════ */
+const CDN = 'https://cdn.poehali.dev/projects/3fddb330-2995-4a7b-b6ba-ce1064d5f9a6/files/';
+const SPRITE_FILES = {
+  grass:      'd871757c-9dde-40a7-a177-4341c0e4249a.jpg',
+  dirt:       'f5cacf8d-6d63-4fc9-bbcd-c01ac4ce037c.jpg',
+  road_h:     '8031c542-0d9f-4a54-93de-7bc683a9705f.jpg',
+  road_v:     'd3125317-a8ca-43e9-9c94-4693b534eb05.jpg',
+  road_cross: 'b87742b9-788c-46f3-8881-a3c21cdfcaf7.jpg',
+  road_t:     '40778aac-a674-4742-a178-fd49ac4a67c6.jpg',
+  road_corner:'fe232868-37c5-478d-9ddb-0eda06385f37.jpg',
+  tree_oak:   'ae24076c-da71-4e90-be4d-dc0d509257da.jpg',
+  tree_pine:  '7a0a9aa3-7e2a-4c24-b8b5-72f30d988214.jpg',
+};
+const SPRITES = {};
+Object.entries(SPRITE_FILES).forEach(([key, file]) => {
+  const img = new Image();
+  img.src = CDN + file;
+  img.onload = () => render();
+  SPRITES[key] = img;
+});
+
+// Маппинг tile_type → sprite key
+const TYPE_SPRITE = { 0:'grass', 1:'road_h', 3:'tree_oak' };
+
+function getSpriteKey(tileType, x, y) {
+  if (tileType === 3) return (x + y) % 2 === 0 ? 'tree_oak' : 'tree_pine';
+  return TYPE_SPRITE[tileType] || null;
+}
+
+function imgReady(img) { return img && img.complete && img.naturalWidth > 0; }
+
+/* ════════════════════════════════════
    TILE DEFINITIONS
 ════════════════════════════════════ */
 const TILES = [
@@ -282,38 +315,51 @@ function render() {
       const tile = TILE_BY_ID[cell.tile_type] || TILES[0];
       const {sx, sy} = worldToScreen(x, y);
 
-      // fill
-      ctx.fillStyle = tile.color;
-      ctx.fillRect(Math.floor(sx), Math.floor(sy), Math.ceil(cellPx)+1, Math.ceil(cellPx)+1);
+      const fx = Math.floor(sx), fy = Math.floor(sy);
+      const fw = Math.ceil(cellPx)+1, fh = Math.ceil(cellPx)+1;
+      const spKey = getSpriteKey(cell.tile_type, x, y);
+      const img = spKey ? SPRITES[spKey] : null;
 
-      // walkable indicator
-      if (!cell.walkable && cellPx > 8) {
-        ctx.fillStyle = 'rgba(255,50,50,0.18)';
-        ctx.fillRect(Math.floor(sx), Math.floor(sy), Math.ceil(cellPx)+1, Math.ceil(cellPx)+1);
+      if (imgReady(img)) {
+        // Деревья рисуем с превью-масштабом (квадратная картинка на ячейку)
+        ctx.drawImage(img, fx, fy, fw, fh);
+      } else {
+        // fallback — цвет + иконка
+        ctx.fillStyle = tile.color;
+        ctx.fillRect(fx, fy, fw, fh);
+        if (cellPx >= 16 && tile.icon) {
+          const fs = Math.min(13, cellPx * 0.5);
+          ctx.font = `${fs}px serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(tile.icon, fx + fw/2, fy + fh/2);
+          ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        }
+      }
+
+      // walkable indicator — красный оверлей
+      if (!cell.walkable && cellPx > 6) {
+        ctx.fillStyle = 'rgba(220,40,40,0.22)';
+        ctx.fillRect(fx, fy, fw, fh);
+        if (cellPx >= 14) {
+          ctx.fillStyle = 'rgba(255,80,80,0.7)';
+          ctx.font = `${Math.min(10,cellPx*0.35)}px monospace`;
+          ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+          ctx.fillText('✕', fx+fw-2, fy+fh-1);
+          ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        }
       }
 
       // grid lines
-      if (cellPx > 5) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      if (cellPx > 4) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.28)';
         ctx.lineWidth = 0.5;
-        ctx.strokeRect(Math.floor(sx)+0.5, Math.floor(sy)+0.5, Math.ceil(cellPx), Math.ceil(cellPx));
+        ctx.strokeRect(fx+0.5, fy+0.5, fw-1, fh-1);
       }
 
-      // tile icon (when zoomed in enough)
-      if (cellPx >= 20 && tile.icon) {
-        const fs = Math.min(14, cellPx * 0.55);
-        ctx.font = `${fs}px serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(tile.icon, Math.floor(sx + cellPx/2), Math.floor(sy + cellPx/2));
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'alphabetic';
-      }
-
-      // dirty marker
-      if (dirty.has(`${x},${y}`) && cellPx > 8) {
-        ctx.fillStyle = 'rgba(245,166,35,0.35)';
-        ctx.fillRect(Math.floor(sx), Math.floor(sy), 4, 4);
+      // dirty marker (жёлтый уголок)
+      if (dirty.has(`${x},${y}`) && cellPx > 6) {
+        ctx.fillStyle = 'rgba(245,166,35,0.75)';
+        ctx.fillRect(fx, fy, 4, 4);
       }
     }
   }
